@@ -2132,7 +2132,7 @@ export default function ResearchWorkspace({
                       }
                     }}
                     placeholder="Write freely. Your work is saved locally in real-time."
-                    className="w-full font-sans text-base text-stone-900 dark:text-stone-100 bg-transparent resize-y min-h-[460px] focus:outline-none leading-[1.85] tracking-[0.012em] placeholder:text-stone-400/70 dark:placeholder:text-stone-600 placeholder:font-sans selection:bg-[#912A4A]/20 dark:selection:bg-rose-900/40 py-2"
+                    className="w-full font-sans text-base text-stone-900 dark:text-stone-100 bg-transparent resize-y min-h-[460px] focus:outline-none leading-[1.85] tracking-[0.012em] placeholder:text-stone-400/70 dark:placeholder:text-stone-600 placeholder:font-sans selection:bg-[#912A4A]/20 dark:selection:bg-rose-900/40 py-2 md:pr-44"
                   />
                 </div>
 
