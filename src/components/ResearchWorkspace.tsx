@@ -1861,15 +1861,16 @@ export default function ResearchWorkspace({
                       onClick={() => setIsReflectionShelfOpen(!isReflectionShelfOpen)}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-r-lg shadow-md border border-l-0 text-xs font-medium transition-all duration-150 cursor-pointer ${
                         isReflectionShelfOpen
-                          ? 'bg-[#1B0A3B] text-white border-[#1B0A3B] font-semibold translate-x-0.5'
-                          : 'bg-white dark:bg-stone-850 hover:bg-[#FAF8F5] dark:hover:bg-stone-800 text-[#1B0A3B] dark:text-indigo-200 border-stone-200 dark:border-stone-700 hover:translate-x-0.5'
+                          ? 'bg-[#1D9E75]/10 dark:bg-[#1D9E75]/15 text-[#1B0A3B] dark:text-indigo-100 border-stone-200 dark:border-stone-700 border-r-[3px] border-r-[#1D9E75] dark:border-r-[#28c093] font-semibold translate-x-0.5'
+                          : 'bg-white dark:bg-stone-850 hover:bg-[#FAF8F5] dark:hover:bg-stone-800 text-[#1B0A3B] dark:text-indigo-200 border-stone-200 dark:border-stone-700 border-r-2 border-r-transparent hover:translate-x-0.5'
                       }`}
                       title="Open Reflection Shelf"
                       aria-label="Open Reflection Shelf"
+                      aria-expanded={isReflectionShelfOpen}
                       id="margin-tab-reflection-shelf"
                     >
-                      <Bookmark className={`w-3.5 h-3.5 shrink-0 ${isReflectionShelfOpen ? 'text-[#FAF8F5]' : 'text-[#912A4A] dark:text-rose-400'}`} />
-                      <span className={`font-sans text-[13px] whitespace-nowrap font-medium ${isReflectionShelfOpen ? 'text-[#FAF8F5]' : 'text-[#1B0A3B] dark:text-indigo-200'}`}>Reflection Shelf</span>
+                      <Bookmark className="w-3.5 h-3.5 shrink-0 text-[#912A4A] dark:text-rose-400" />
+                      <span className="font-sans text-[13px] whitespace-nowrap font-medium text-[#1B0A3B] dark:text-indigo-100">Reflection Shelf</span>
                     </button>
 
                     {/* Tab 2: Check References */}
@@ -1885,14 +1886,15 @@ export default function ResearchWorkspace({
                       }}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-r-lg shadow-md border border-l-0 text-xs font-medium transition-all duration-150 cursor-pointer ${
                         activeCompanionTool === 'references'
-                          ? 'bg-[#912A4A] text-white border-rose-900 font-semibold translate-x-0.5'
-                          : 'bg-white dark:bg-stone-850 hover:bg-stone-50 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-200 border-stone-200 dark:border-stone-700 hover:translate-x-0.5'
+                          ? 'bg-[#1D9E75]/10 dark:bg-[#1D9E75]/15 text-[#1B0A3B] dark:text-indigo-100 border-stone-200 dark:border-stone-700 border-r-[3px] border-r-[#1D9E75] dark:border-r-[#28c093] font-semibold translate-x-0.5'
+                          : 'bg-white dark:bg-stone-850 hover:bg-stone-50 dark:hover:bg-stone-800 text-[#1B0A3B] dark:text-indigo-200 border-stone-200 dark:border-stone-700 border-r-2 border-r-transparent hover:translate-x-0.5'
                       }`}
                       title="Browse and insert citations from your library"
                       aria-label="References Library"
+                      aria-pressed={activeCompanionTool === 'references'}
                       id="margin-tab-references"
                     >
-                      <BookOpen className={`w-3.5 h-3.5 shrink-0 ${activeCompanionTool === 'references' ? 'text-[#FAF8F5]' : 'text-[#C87D20] dark:text-amber-400'}`} />
+                      <BookOpen className="w-3.5 h-3.5 shrink-0 text-[#C87D20] dark:text-amber-400" />
                       <span className={`font-sans text-[13px] whitespace-nowrap font-medium ${activeCompanionTool === 'references' ? 'text-[#FAF8F5]' : 'text-[#1B0A3B] dark:text-indigo-200'}`}>
                         References ({papers.length})
                       </span>
@@ -1911,14 +1913,15 @@ export default function ResearchWorkspace({
                       }}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-r-lg shadow-md border border-l-0 text-xs font-medium transition-all duration-150 cursor-pointer ${
                         activeCompanionTool === 'lit_intelligence'
-                          ? 'bg-[#912A4A] text-white border-rose-900 font-semibold translate-x-0.5'
-                          : 'bg-white dark:bg-stone-850 hover:bg-stone-50 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-200 border-stone-200 dark:border-stone-700 hover:translate-x-0.5'
+                          ? 'bg-[#1D9E75]/10 dark:bg-[#1D9E75]/15 text-[#1B0A3B] dark:text-indigo-100 border-stone-200 dark:border-stone-700 border-r-[3px] border-r-[#1D9E75] dark:border-r-[#28c093] font-semibold translate-x-0.5'
+                          : 'bg-white dark:bg-stone-850 hover:bg-stone-50 dark:hover:bg-stone-800 text-[#1B0A3B] dark:text-indigo-200 border-stone-200 dark:border-stone-700 border-r-2 border-r-transparent hover:translate-x-0.5'
                       }`}
                       title="Literature synthesis & key paper takeaways"
                       aria-label="Paper Summaries"
+                      aria-pressed={activeCompanionTool === 'lit_intelligence'}
                       id="margin-tab-paper-summaries"
                     >
-                      <FileText className={`w-3.5 h-3.5 shrink-0 ${activeCompanionTool === 'lit_intelligence' ? 'text-[#FAF8F5]' : 'text-[#1B0A3B] dark:text-indigo-200'}`} />
+                      <FileText className="w-3.5 h-3.5 shrink-0 text-[#1B0A3B] dark:text-indigo-200" />
                       <span className={`font-sans text-[13px] whitespace-nowrap font-medium ${activeCompanionTool === 'lit_intelligence' ? 'text-[#FAF8F5]' : 'text-[#1B0A3B] dark:text-indigo-200'}`}>Paper Summaries</span>
                     </button>
 
@@ -1935,14 +1938,15 @@ export default function ResearchWorkspace({
                       }}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-r-lg shadow-md border border-l-0 text-xs font-medium transition-all duration-150 cursor-pointer ${
                         activeCompanionTool === 'writing_companion'
-                          ? 'bg-[#912A4A] text-white border-rose-900 font-semibold translate-x-0.5'
-                          : 'bg-white dark:bg-stone-850 hover:bg-stone-50 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-200 border-stone-200 dark:border-stone-700 hover:translate-x-0.5'
+                          ? 'bg-[#1D9E75]/10 dark:bg-[#1D9E75]/15 text-[#1B0A3B] dark:text-indigo-100 border-stone-200 dark:border-stone-700 border-r-[3px] border-r-[#1D9E75] dark:border-r-[#28c093] font-semibold translate-x-0.5'
+                          : 'bg-white dark:bg-stone-850 hover:bg-stone-50 dark:hover:bg-stone-800 text-[#1B0A3B] dark:text-indigo-200 border-stone-200 dark:border-stone-700 border-r-2 border-r-transparent hover:translate-x-0.5'
                       }`}
                       title="Live draft feedback, claims grounding & suggestions"
                       aria-label="Writing Assistant"
+                      aria-pressed={activeCompanionTool === 'writing_companion'}
                       id="margin-tab-writing-assistant"
                     >
-                      <Feather className={`w-3.5 h-3.5 shrink-0 ${activeCompanionTool === 'writing_companion' ? 'text-[#FAF8F5]' : 'text-[#912A4A] dark:text-rose-400'}`} />
+                      <Feather className="w-3.5 h-3.5 shrink-0 text-[#912A4A] dark:text-rose-400" />
                       <span className={`font-sans text-[13px] whitespace-nowrap font-medium ${activeCompanionTool === 'writing_companion' ? 'text-[#FAF8F5]' : 'text-[#1B0A3B] dark:text-indigo-200'}`}>Writing Assistant</span>
                     </button>
 
@@ -1959,14 +1963,15 @@ export default function ResearchWorkspace({
                       }}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-r-lg shadow-md border border-l-0 text-xs font-medium transition-all duration-150 cursor-pointer ${
                         activeCompanionTool === 'perspective_check'
-                          ? 'bg-[#912A4A] text-white border-rose-900 font-semibold translate-x-0.5'
-                          : 'bg-white dark:bg-stone-850 hover:bg-stone-50 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-200 border-stone-200 dark:border-stone-700 hover:translate-x-0.5'
+                          ? 'bg-[#1D9E75]/10 dark:bg-[#1D9E75]/15 text-[#1B0A3B] dark:text-indigo-100 border-stone-200 dark:border-stone-700 border-r-[3px] border-r-[#1D9E75] dark:border-r-[#28c093] font-semibold translate-x-0.5'
+                          : 'bg-white dark:bg-stone-850 hover:bg-stone-50 dark:hover:bg-stone-800 text-[#1B0A3B] dark:text-indigo-200 border-stone-200 dark:border-stone-700 border-r-2 border-r-transparent hover:translate-x-0.5'
                       }`}
                       title="Reflect on epistemic perspectives & missing voices"
                       aria-label="Perspective Check"
+                      aria-pressed={activeCompanionTool === 'perspective_check'}
                       id="margin-tab-perspective-check"
                     >
-                      <Scale className={`w-3.5 h-3.5 shrink-0 ${activeCompanionTool === 'perspective_check' ? 'text-[#FAF8F5]' : 'text-[#912A4A] dark:text-rose-400'}`} />
+                      <Scale className="w-3.5 h-3.5 shrink-0 text-[#912A4A] dark:text-rose-400" />
                       <span className={`font-sans text-[13px] whitespace-nowrap font-medium ${activeCompanionTool === 'perspective_check' ? 'text-[#FAF8F5]' : 'text-[#1B0A3B] dark:text-indigo-200'}`}>Perspective Check</span>
                     </button>
 
@@ -1983,14 +1988,15 @@ export default function ResearchWorkspace({
                       }}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-r-lg shadow-md border border-l-0 text-xs font-medium transition-all duration-150 cursor-pointer ${
                         activeCompanionTool === 'outline'
-                          ? 'bg-[#912A4A] text-white border-rose-900 font-semibold translate-x-0.5'
-                          : 'bg-white dark:bg-stone-850 hover:bg-stone-50 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-200 border-stone-200 dark:border-stone-700 hover:translate-x-0.5'
+                          ? 'bg-[#1D9E75]/10 dark:bg-[#1D9E75]/15 text-[#1B0A3B] dark:text-indigo-100 border-stone-200 dark:border-stone-700 border-r-[3px] border-r-[#1D9E75] dark:border-r-[#28c093] font-semibold translate-x-0.5'
+                          : 'bg-white dark:bg-stone-850 hover:bg-stone-50 dark:hover:bg-stone-800 text-[#1B0A3B] dark:text-indigo-200 border-stone-200 dark:border-stone-700 border-r-2 border-r-transparent hover:translate-x-0.5'
                       }`}
                       title="View and organize chapter outline"
                       aria-label="Outline"
+                      aria-pressed={activeCompanionTool === 'outline'}
                       id="margin-tab-outline"
                     >
-                      <ListTree className={`w-3.5 h-3.5 shrink-0 ${activeCompanionTool === 'outline' ? 'text-[#FAF8F5]' : 'text-[#1B0A3B] dark:text-indigo-200'}`} />
+                      <ListTree className="w-3.5 h-3.5 shrink-0 text-[#1B0A3B] dark:text-indigo-200" />
                       <span className={`font-sans text-[13px] whitespace-nowrap font-medium ${activeCompanionTool === 'outline' ? 'text-[#FAF8F5]' : 'text-[#1B0A3B] dark:text-indigo-200'}`}>Outline</span>
                     </button>
 
@@ -2007,14 +2013,15 @@ export default function ResearchWorkspace({
                       }}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-r-lg shadow-md border border-l-0 text-xs font-medium transition-all duration-150 cursor-pointer ${
                         activeCompanionTool === 'chapter_sources'
-                          ? 'bg-[#912A4A] text-white border-rose-900 font-semibold translate-x-0.5'
-                          : 'bg-white dark:bg-stone-850 hover:bg-stone-50 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-200 border-stone-200 dark:border-stone-700 hover:translate-x-0.5'
+                          ? 'bg-[#1D9E75]/10 dark:bg-[#1D9E75]/15 text-[#1B0A3B] dark:text-indigo-100 border-stone-200 dark:border-stone-700 border-r-[3px] border-r-[#1D9E75] dark:border-r-[#28c093] font-semibold translate-x-0.5'
+                          : 'bg-white dark:bg-stone-850 hover:bg-stone-50 dark:hover:bg-stone-800 text-[#1B0A3B] dark:text-indigo-200 border-stone-200 dark:border-stone-700 border-r-2 border-r-transparent hover:translate-x-0.5'
                       }`}
                       title="Chapter-specific sources and references"
                       aria-label="Chapter sources"
+                      aria-pressed={activeCompanionTool === 'chapter_sources'}
                       id="margin-tab-chapter-sources"
                     >
-                      <BookMarked className={`w-3.5 h-3.5 shrink-0 ${activeCompanionTool === 'chapter_sources' ? 'text-[#FAF8F5]' : 'text-[#C87D20] dark:text-amber-300'}`} />
+                      <BookMarked className="w-3.5 h-3.5 shrink-0 text-[#C87D20] dark:text-amber-300" />
                       <span className={`font-sans text-[13px] whitespace-nowrap font-medium ${activeCompanionTool === 'chapter_sources' ? 'text-[#FAF8F5]' : 'text-[#1B0A3B] dark:text-indigo-200'}`}>
                         Chapter sources ({chapterLinkedPapers.length})
                       </span>
@@ -2033,14 +2040,15 @@ export default function ResearchWorkspace({
                       }}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-r-lg shadow-md border border-l-0 text-xs font-medium transition-all duration-150 cursor-pointer ${
                         activeCompanionTool === 'tasks'
-                          ? 'bg-[#912A4A] text-white border-rose-900 font-semibold translate-x-0.5'
-                          : 'bg-white dark:bg-stone-850 hover:bg-stone-50 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-200 border-stone-200 dark:border-stone-700 hover:translate-x-0.5'
+                          ? 'bg-[#1D9E75]/10 dark:bg-[#1D9E75]/15 text-[#1B0A3B] dark:text-indigo-100 border-stone-200 dark:border-stone-700 border-r-[3px] border-r-[#1D9E75] dark:border-r-[#28c093] font-semibold translate-x-0.5'
+                          : 'bg-white dark:bg-stone-850 hover:bg-stone-50 dark:hover:bg-stone-800 text-[#1B0A3B] dark:text-indigo-200 border-stone-200 dark:border-stone-700 border-r-2 border-r-transparent hover:translate-x-0.5'
                       }`}
                       title="Research milestones and tasks"
                       aria-label="Tasks"
+                      aria-pressed={activeCompanionTool === 'tasks'}
                       id="margin-tab-tasks"
                     >
-                      <CheckSquare className={`w-3.5 h-3.5 shrink-0 ${activeCompanionTool === 'tasks' ? 'text-[#FAF8F5]' : 'text-[#1D9E75] dark:text-[#28c093]'}`} />
+                      <CheckSquare className="w-3.5 h-3.5 shrink-0 text-[#1D9E75] dark:text-[#28c093]" />
                       <span className={`font-sans text-[13px] whitespace-nowrap font-medium ${activeCompanionTool === 'tasks' ? 'text-[#FAF8F5]' : 'text-[#1B0A3B] dark:text-indigo-200'}`}>
                         Tasks ({activeJourney.tasks.filter(t => t.completed).length}/{activeJourney.tasks.length})
                       </span>
@@ -2059,14 +2067,15 @@ export default function ResearchWorkspace({
                       }}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-r-lg shadow-md border border-l-0 text-xs font-medium transition-all duration-150 cursor-pointer ${
                         activeCompanionTool === 'history'
-                          ? 'bg-[#912A4A] text-white border-rose-900 font-semibold translate-x-0.5'
-                          : 'bg-white dark:bg-stone-850 hover:bg-stone-50 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-200 border-stone-200 dark:border-stone-700 hover:translate-x-0.5'
+                          ? 'bg-[#1D9E75]/10 dark:bg-[#1D9E75]/15 text-[#1B0A3B] dark:text-indigo-100 border-stone-200 dark:border-stone-700 border-r-[3px] border-r-[#1D9E75] dark:border-r-[#28c093] font-semibold translate-x-0.5'
+                          : 'bg-white dark:bg-stone-850 hover:bg-stone-50 dark:hover:bg-stone-800 text-[#1B0A3B] dark:text-indigo-200 border-stone-200 dark:border-stone-700 border-r-2 border-r-transparent hover:translate-x-0.5'
                       }`}
                       title="Draft history and auto-save snapshots"
                       aria-label="History"
+                      aria-pressed={activeCompanionTool === 'history'}
                       id="margin-tab-history"
                     >
-                      <History className={`w-3.5 h-3.5 shrink-0 ${activeCompanionTool === 'history' ? 'text-[#FAF8F5]' : 'text-[#1B0A3B] dark:text-indigo-200'}`} />
+                      <History className="w-3.5 h-3.5 shrink-0 text-[#1B0A3B] dark:text-indigo-200" />
                       <span className={`font-sans text-[13px] whitespace-nowrap font-medium ${activeCompanionTool === 'history' ? 'text-[#FAF8F5]' : 'text-[#1B0A3B] dark:text-indigo-200'}`}>History</span>
                     </button>
 
