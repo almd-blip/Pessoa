@@ -1869,7 +1869,7 @@ export default function ResearchWorkspace({
                       id="margin-tab-reflection-shelf"
                     >
                       <Bookmark className="w-3.5 h-3.5 shrink-0 text-[#1D9E75] dark:text-[#28c093]" />
-                      <span className="font-sans text-[11px] whitespace-nowrap font-medium text-[#1B0A3B] dark:text-indigo-200">Reflection Shelf</span>
+                      <span className="font-sans text-[13px] whitespace-nowrap font-medium text-[#1B0A3B] dark:text-indigo-200">Reflection Shelf</span>
                     </button>
 
                     {/* Tab 2: Check References */}
@@ -1893,7 +1893,7 @@ export default function ResearchWorkspace({
                       id="margin-tab-references"
                     >
                       <BookOpen className="w-3.5 h-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
-                      <span className="font-sans text-[11px] whitespace-nowrap font-medium">
+                      <span className="font-sans text-[13px] whitespace-nowrap font-medium">
                         References ({papers.length})
                       </span>
                     </button>
@@ -1919,7 +1919,7 @@ export default function ResearchWorkspace({
                       id="margin-tab-paper-summaries"
                     >
                       <FileText className="w-3.5 h-3.5 shrink-0 text-blue-600 dark:text-blue-400" />
-                      <span className="font-sans text-[11px] whitespace-nowrap font-medium">Paper Summaries</span>
+                      <span className="font-sans text-[13px] whitespace-nowrap font-medium">Paper Summaries</span>
                     </button>
 
                     {/* Tab 4: Writing Assistant (Feather icon) */}
@@ -1943,7 +1943,7 @@ export default function ResearchWorkspace({
                       id="margin-tab-writing-assistant"
                     >
                       <Feather className="w-3.5 h-3.5 shrink-0 text-[#912A4A] dark:text-rose-400" />
-                      <span className="font-sans text-[11px] whitespace-nowrap font-medium">Writing Assistant</span>
+                      <span className="font-sans text-[13px] whitespace-nowrap font-medium">Writing Assistant</span>
                     </button>
 
                     {/* Tab 5: Perspective Check (Scale icon) */}
@@ -1967,7 +1967,7 @@ export default function ResearchWorkspace({
                       id="margin-tab-perspective-check"
                     >
                       <Scale className="w-3.5 h-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                      <span className="font-sans text-[11px] whitespace-nowrap font-medium">Perspective Check</span>
+                      <span className="font-sans text-[13px] whitespace-nowrap font-medium">Perspective Check</span>
                     </button>
 
                     {/* Tab 6: Outline */}
@@ -1991,7 +1991,7 @@ export default function ResearchWorkspace({
                       id="margin-tab-outline"
                     >
                       <ListTree className="w-3.5 h-3.5 shrink-0 text-indigo-600 dark:text-indigo-400" />
-                      <span className="font-sans text-[11px] whitespace-nowrap font-medium">Outline</span>
+                      <span className="font-sans text-[13px] whitespace-nowrap font-medium">Outline</span>
                     </button>
 
                     {/* Tab 7: Chapter sources */}
@@ -2015,7 +2015,7 @@ export default function ResearchWorkspace({
                       id="margin-tab-chapter-sources"
                     >
                       <BookMarked className="w-3.5 h-3.5 shrink-0 text-amber-700 dark:text-amber-300" />
-                      <span className="font-sans text-[11px] whitespace-nowrap font-medium">
+                      <span className="font-sans text-[13px] whitespace-nowrap font-medium">
                         Chapter sources ({chapterLinkedPapers.length})
                       </span>
                     </button>
@@ -2041,7 +2041,7 @@ export default function ResearchWorkspace({
                       id="margin-tab-tasks"
                     >
                       <CheckSquare className="w-3.5 h-3.5 shrink-0 text-teal-600 dark:text-teal-400" />
-                      <span className="font-sans text-[11px] whitespace-nowrap font-medium">
+                      <span className="font-sans text-[13px] whitespace-nowrap font-medium">
                         Tasks ({activeJourney.tasks.filter(t => t.completed).length}/{activeJourney.tasks.length})
                       </span>
                     </button>
@@ -2067,7 +2067,7 @@ export default function ResearchWorkspace({
                       id="margin-tab-history"
                     >
                       <History className="w-3.5 h-3.5 shrink-0 text-stone-500 dark:text-stone-400" />
-                      <span className="font-sans text-[11px] whitespace-nowrap font-medium">History</span>
+                      <span className="font-sans text-[13px] whitespace-nowrap font-medium">History</span>
                     </button>
 
                   </div>
