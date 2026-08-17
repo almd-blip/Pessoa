@@ -1382,14 +1382,14 @@ export default function LiteratureLibrary({
                     {/* Passive metadata follows the title on the shared reading axis. */}
                     <div className="pt-0.5">
                       <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-1 text-sm leading-relaxed">
-                        <span className="font-sans text-stone-600 dark:text-stone-300 font-medium">
+                        <span className="font-sans text-[#1B0A3B] dark:text-stone-200 font-medium">
                           {formatAuthorsShort(p.authors, p.year)}
                         </span>
 
                         {col && (
                           <>
                             <span aria-hidden="true" className="text-stone-300 dark:text-stone-600">·</span>
-                            <span className="font-sans text-stone-500 dark:text-stone-400">{col.name}</span>
+                            <span className="font-sans text-[#1B0A3B]/75 dark:text-stone-300">{col.name}</span>
                           </>
                         )}
 
