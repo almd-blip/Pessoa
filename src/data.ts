@@ -126,97 +126,75 @@ export const INITIAL_PAPERS: Paper[] = [
 
 export const INITIAL_JOURNEYS: ResearchJourney[] = [
   {
-    id: 'journey-digital-wellbeing',
-    title: 'Digital Wellbeing and Sustainable Research Practice',
+    id: 'journey-1',
+    title: 'Decolonial Methodologies in Museum UX',
     type: 'phd',
-    description: 'A sample research project for planning a humane, evidence-informed study of digital wellbeing in academic work.',
+    description: 'A multi-year PhD research project re-evaluating the user experience of interactive museum galleries through indigenous and decolonial frameworks. The goal is to design collaborative, non-hierarchical museum interfaces.',
     questions: [
-      'How do digital tools shape researchers’ attention, wellbeing, and sense of progress?',
-      'Which individual and institutional practices support sustainable research work?'
+      'How do standard Western UX design guidelines perpetuate epistemic violence in cultural heritage representation?',
+      'What design practices emerge when designing exhibits in collaborative partnership with indigenous elders?',
+      'Can interface design support oral storytelling without forcing text-heavy structures?'
     ],
     chapters: [
-      {
-        id: 'chapter-dw-introduction',
-        title: 'Introduction',
-        status: 'not_started',
-        content: '',
-        linkedPaperIds: ['paper-3', 'paper-4']
-      },
-      {
-        id: 'chapter-dw-literature',
-        title: 'Literature Review',
-        status: 'not_started',
-        content: '',
-        linkedPaperIds: ['paper-3', 'paper-4']
-      },
-      {
-        id: 'chapter-dw-methods',
-        title: 'Methods',
-        status: 'not_started',
-        content: ''
-      }
+      { id: 'ch-1', title: 'Chapter 1: Introduction and Scope', status: 'completed', content: '' },
+      { id: 'ch-2', title: 'Chapter 2: Decolonial Critical Theory', status: 'drafting', content: '' },
+      { id: 'ch-3', title: 'Chapter 3: Co-Design Methodologies', status: 'not_started', content: '' },
+      { id: 'ch-4', title: 'Chapter 4: Comparative Case Studies', status: 'not_started', content: '' }
     ],
     tasks: [
-      { id: 'task-dw-question', text: 'Refine the research questions', completed: false },
-      { id: 'task-dw-sources', text: 'Review the linked starter sources', completed: false },
-      { id: 'task-dw-outline', text: 'Sketch an outline for the literature review', completed: false }
+      { id: 't-1', text: 'Transcribe co-design workshop with the Heritage Council', completed: true },
+      { id: 't-2', text: 'Request ethics clearance for Chapter 3 interviews', completed: true },
+      { id: 't-3', text: 'Map critical concepts from Tuhiwai Smith to UX schema', completed: false, dueDate: '2026-07-15' },
+      { id: 't-4', text: 'Draft literature review sub-section on Oral Knowledge Systems', completed: false, dueDate: '2026-08-01' }
     ],
     timeline: [
-      {
-        id: 'timeline-dw-start',
-        date: '2026-08-17',
-        title: 'Sample project created',
-        description: 'Use this project as a starting point, then adapt or replace it with your own work.',
-        type: 'milestone'
-      }
+      { id: 'tl-1', date: '2025-09-01', title: 'PhD Candidacy Approved', description: 'Ethics approval cleared, research proposal defended successfully.', type: 'milestone' },
+      { id: 'tl-2', date: '2026-02-15', title: 'Completed Workshop 1', description: 'Co-design session with 12 community curators.', type: 'meeting' },
+      { id: 'tl-3', date: '2026-06-30', title: 'Chapter 2 Draft Submission', description: 'Submit decolonial theory chapter draft to supervisor.', type: 'draft' },
+      { id: 'tl-4', date: '2026-12-15', title: 'Mid-term Review Seminar', description: 'Present case study findings to the HCI department.', type: 'milestone' }
     ],
-    linkedPaperIds: ['paper-3', 'paper-4']
+    linkedPaperIds: ['paper-2', 'paper-3'],
+    targetDeadline: '2028-09-15',
+    reusableSnippets: [
+      'Relational ontology: Indigenous design approaches prioritize the relationality between the viewer, the artifact, and the community, in contrast to Cartesian individual UX models.',
+      'Oral documentation: Digitizing oral histories requires interfaces that preserve conversational cadence, acoustic metadata, and contextual storytelling rather than flat textual extraction.'
+    ],
+    fundingDetails: {
+      funderName: 'National Endowment for the Humanities (NEH) Fellowship',
+      priorityCriteria: [
+        'Broad public dissemination of cultural heritage assets',
+        'Inclusion of marginalized communities in historical documentation',
+        'Innovative digital humanities approaches'
+      ],
+      impactStatement: 'By creating collaborative museum interfaces, this project transforms cultural institutions from sites of passive consumption into active spaces of community dialogue, enhancing cultural preservation and democratic participation.',
+      collaborators: 'Auckland Museum, Indigenous Design Collective, Digital Humanities Lab Auckland',
+      budgetSummary: '$85,000 stipends and travel funding for community elders and workshop participants.'
+    }
   },
   {
-    id: 'journey-ai-society',
-    title: 'Critical AI and Society',
+    id: 'journey-2',
+    title: 'Cognitive Offloading in Academic Writing Platforms',
     type: 'journal',
-    description: 'A sample article project for developing a critical perspective on AI systems and their social consequences.',
+    description: 'A journal paper targeted at ACM Transactions on Computer-Human Interaction (TOCHI), evaluating how computer-aided writing environments can support complex argument construction without overriding human agency.',
     questions: [
-      'What social assumptions are embedded in contemporary AI systems?',
-      'How can researchers communicate limitations, accountability, and public impact clearly?'
+      'What are the cognitive barriers researchers face when managing extensive citations while drafting papers?',
+      'How can AI systems recommend source literature without generating false citations or causing confirmation bias?'
     ],
     chapters: [
-      {
-        id: 'chapter-ai-opening',
-        title: 'Opening Argument',
-        status: 'not_started',
-        content: '',
-        linkedPaperIds: ['paper-1']
-      },
-      {
-        id: 'chapter-ai-evidence',
-        title: 'Evidence and Examples',
-        status: 'not_started',
-        content: '',
-        linkedPaperIds: ['paper-1']
-      },
-      {
-        id: 'chapter-ai-conclusion',
-        title: 'Conclusion',
-        status: 'not_started',
-        content: ''
-      }
+      { id: 'ch-2-1', title: 'Introduction', status: 'drafting', content: '' },
+      { id: 'ch-2-2', title: 'Related Work on Citations', status: 'not_started', content: '' },
+      { id: 'ch-2-3', title: 'System Interface Design', status: 'not_started', content: '' }
     ],
     tasks: [
-      { id: 'task-ai-scope', text: 'Define the article’s scope and audience', completed: false },
-      { id: 'task-ai-evidence', text: 'Collect supporting evidence and examples', completed: false }
+      { id: 't-2-1', text: 'Run pilot study of the distraction-free drafting companion', completed: false, dueDate: '2026-07-10' },
+      { id: 't-2-2', text: 'Conduct initial comparative literature review on citation managers', completed: true }
     ],
     timeline: [
-      {
-        id: 'timeline-ai-start',
-        date: '2026-08-17',
-        title: 'Sample project created',
-        description: 'All writing areas are intentionally blank and ready for your own draft.',
-        type: 'milestone'
-      }
+      { id: 'tl-2-1', date: '2026-05-01', title: 'Project Launch', description: 'Assembled advisory board and defined interface design principles.', type: 'milestone' },
+      { id: 'tl-2-2', date: '2026-09-01', title: 'Target Submission to TOCHI', description: 'Submit final peer-reviewed manuscript.', type: 'submission' }
     ],
-    linkedPaperIds: ['paper-1']
+    linkedPaperIds: ['paper-1', 'paper-2'],
+    targetDeadline: '2026-09-01'
   }
 ];
 
