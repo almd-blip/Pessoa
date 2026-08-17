@@ -1868,8 +1868,8 @@ export default function ResearchWorkspace({
                       aria-label="Open Reflection Shelf"
                       id="margin-tab-reflection-shelf"
                     >
-                      <Bookmark className="w-3.5 h-3.5 shrink-0 text-[#1D9E75] dark:text-[#28c093]" />
-                      <span className="font-sans text-[13px] whitespace-nowrap font-medium text-[#1B0A3B] dark:text-indigo-200">Reflection Shelf</span>
+                      <Bookmark className={`w-3.5 h-3.5 shrink-0 ${isReflectionShelfOpen ? 'text-[#FAF8F5]' : 'text-[#912A4A] dark:text-rose-400'}`} />
+                      <span className={`font-sans text-[13px] whitespace-nowrap font-medium ${isReflectionShelfOpen ? 'text-[#FAF8F5]' : 'text-[#1B0A3B] dark:text-indigo-200'}`}>Reflection Shelf</span>
                     </button>
 
                     {/* Tab 2: Check References */}
@@ -1892,8 +1892,8 @@ export default function ResearchWorkspace({
                       aria-label="References Library"
                       id="margin-tab-references"
                     >
-                      <BookOpen className="w-3.5 h-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
-                      <span className="font-sans text-[13px] whitespace-nowrap font-medium">
+                      <BookOpen className={`w-3.5 h-3.5 shrink-0 ${activeCompanionTool === 'references' ? 'text-[#FAF8F5]' : 'text-[#C87D20] dark:text-amber-400'}`} />
+                      <span className={`font-sans text-[13px] whitespace-nowrap font-medium ${activeCompanionTool === 'references' ? 'text-[#FAF8F5]' : 'text-[#1B0A3B] dark:text-indigo-200'}`}>
                         References ({papers.length})
                       </span>
                     </button>
@@ -1918,8 +1918,8 @@ export default function ResearchWorkspace({
                       aria-label="Paper Summaries"
                       id="margin-tab-paper-summaries"
                     >
-                      <FileText className="w-3.5 h-3.5 shrink-0 text-blue-600 dark:text-blue-400" />
-                      <span className="font-sans text-[13px] whitespace-nowrap font-medium">Paper Summaries</span>
+                      <FileText className={`w-3.5 h-3.5 shrink-0 ${activeCompanionTool === 'lit_intelligence' ? 'text-[#FAF8F5]' : 'text-[#1B0A3B] dark:text-indigo-200'}`} />
+                      <span className={`font-sans text-[13px] whitespace-nowrap font-medium ${activeCompanionTool === 'lit_intelligence' ? 'text-[#FAF8F5]' : 'text-[#1B0A3B] dark:text-indigo-200'}`}>Paper Summaries</span>
                     </button>
 
                     {/* Tab 4: Writing Assistant (Feather icon) */}
@@ -1942,8 +1942,8 @@ export default function ResearchWorkspace({
                       aria-label="Writing Assistant"
                       id="margin-tab-writing-assistant"
                     >
-                      <Feather className="w-3.5 h-3.5 shrink-0 text-[#912A4A] dark:text-rose-400" />
-                      <span className="font-sans text-[13px] whitespace-nowrap font-medium">Writing Assistant</span>
+                      <Feather className={`w-3.5 h-3.5 shrink-0 ${activeCompanionTool === 'writing_companion' ? 'text-[#FAF8F5]' : 'text-[#912A4A] dark:text-rose-400'}`} />
+                      <span className={`font-sans text-[13px] whitespace-nowrap font-medium ${activeCompanionTool === 'writing_companion' ? 'text-[#FAF8F5]' : 'text-[#1B0A3B] dark:text-indigo-200'}`}>Writing Assistant</span>
                     </button>
 
                     {/* Tab 5: Perspective Check (Scale icon) */}
@@ -1966,8 +1966,8 @@ export default function ResearchWorkspace({
                       aria-label="Perspective Check"
                       id="margin-tab-perspective-check"
                     >
-                      <Scale className="w-3.5 h-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                      <span className="font-sans text-[13px] whitespace-nowrap font-medium">Perspective Check</span>
+                      <Scale className={`w-3.5 h-3.5 shrink-0 ${activeCompanionTool === 'perspective_check' ? 'text-[#FAF8F5]' : 'text-[#912A4A] dark:text-rose-400'}`} />
+                      <span className={`font-sans text-[13px] whitespace-nowrap font-medium ${activeCompanionTool === 'perspective_check' ? 'text-[#FAF8F5]' : 'text-[#1B0A3B] dark:text-indigo-200'}`}>Perspective Check</span>
                     </button>
 
                     {/* Tab 6: Outline */}
@@ -1990,8 +1990,8 @@ export default function ResearchWorkspace({
                       aria-label="Outline"
                       id="margin-tab-outline"
                     >
-                      <ListTree className="w-3.5 h-3.5 shrink-0 text-indigo-600 dark:text-indigo-400" />
-                      <span className="font-sans text-[13px] whitespace-nowrap font-medium">Outline</span>
+                      <ListTree className={`w-3.5 h-3.5 shrink-0 ${activeCompanionTool === 'outline' ? 'text-[#FAF8F5]' : 'text-[#1B0A3B] dark:text-indigo-200'}`} />
+                      <span className={`font-sans text-[13px] whitespace-nowrap font-medium ${activeCompanionTool === 'outline' ? 'text-[#FAF8F5]' : 'text-[#1B0A3B] dark:text-indigo-200'}`}>Outline</span>
                     </button>
 
                     {/* Tab 7: Chapter sources */}
@@ -2014,8 +2014,8 @@ export default function ResearchWorkspace({
                       aria-label="Chapter sources"
                       id="margin-tab-chapter-sources"
                     >
-                      <BookMarked className="w-3.5 h-3.5 shrink-0 text-amber-700 dark:text-amber-300" />
-                      <span className="font-sans text-[13px] whitespace-nowrap font-medium">
+                      <BookMarked className={`w-3.5 h-3.5 shrink-0 ${activeCompanionTool === 'chapter_sources' ? 'text-[#FAF8F5]' : 'text-[#C87D20] dark:text-amber-300'}`} />
+                      <span className={`font-sans text-[13px] whitespace-nowrap font-medium ${activeCompanionTool === 'chapter_sources' ? 'text-[#FAF8F5]' : 'text-[#1B0A3B] dark:text-indigo-200'}`}>
                         Chapter sources ({chapterLinkedPapers.length})
                       </span>
                     </button>
@@ -2040,8 +2040,8 @@ export default function ResearchWorkspace({
                       aria-label="Tasks"
                       id="margin-tab-tasks"
                     >
-                      <CheckSquare className="w-3.5 h-3.5 shrink-0 text-teal-600 dark:text-teal-400" />
-                      <span className="font-sans text-[13px] whitespace-nowrap font-medium">
+                      <CheckSquare className={`w-3.5 h-3.5 shrink-0 ${activeCompanionTool === 'tasks' ? 'text-[#FAF8F5]' : 'text-[#1D9E75] dark:text-[#28c093]'}`} />
+                      <span className={`font-sans text-[13px] whitespace-nowrap font-medium ${activeCompanionTool === 'tasks' ? 'text-[#FAF8F5]' : 'text-[#1B0A3B] dark:text-indigo-200'}`}>
                         Tasks ({activeJourney.tasks.filter(t => t.completed).length}/{activeJourney.tasks.length})
                       </span>
                     </button>
@@ -2066,8 +2066,8 @@ export default function ResearchWorkspace({
                       aria-label="History"
                       id="margin-tab-history"
                     >
-                      <History className="w-3.5 h-3.5 shrink-0 text-stone-500 dark:text-stone-400" />
-                      <span className="font-sans text-[13px] whitespace-nowrap font-medium">History</span>
+                      <History className={`w-3.5 h-3.5 shrink-0 ${activeCompanionTool === 'history' ? 'text-[#FAF8F5]' : 'text-[#1B0A3B] dark:text-indigo-200'}`} />
+                      <span className={`font-sans text-[13px] whitespace-nowrap font-medium ${activeCompanionTool === 'history' ? 'text-[#FAF8F5]' : 'text-[#1B0A3B] dark:text-indigo-200'}`}>History</span>
                     </button>
 
                   </div>
