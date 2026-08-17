@@ -1381,7 +1381,7 @@ export default function LiteratureLibrary({
 
                     {/* Passive metadata follows the title on the shared reading axis. */}
                     <div className="pt-0.5">
-                      <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-1 text-xs leading-relaxed">
+                      <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-1 text-sm leading-relaxed">
                         <span className="font-sans text-stone-600 dark:text-stone-300 font-medium">
                           {formatAuthorsShort(p.authors, p.year)}
                         </span>
@@ -1415,7 +1415,7 @@ export default function LiteratureLibrary({
                     <div className="mt-3.5 pt-3 border-t border-stone-200/60 dark:border-stone-800 space-y-2.5 animate-fadeIn font-sans">
                       
                       {/* Formatted Citation Preview Snippet (Unboxed with Left Burgundy Accent Aligned to Title X) */}
-                      <div className="pl-3.5 border-l-2 border-[#912A4A] text-xs font-serif text-stone-800 dark:text-stone-200 leading-relaxed italic select-all py-1">
+                      <div className="pl-3.5 border-l-2 border-[#912A4A] text-sm font-serif text-stone-800 dark:text-stone-200 leading-relaxed italic select-all py-1">
                         <span className="font-sans text-xs font-semibold not-italic text-[#912A4A] dark:text-rose-400 mr-1.5">
                           [{citationStyle}]:
                         </span>
