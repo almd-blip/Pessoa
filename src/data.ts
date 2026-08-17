@@ -124,7 +124,101 @@ export const INITIAL_PAPERS: Paper[] = [
   }
 ];
 
-export const INITIAL_JOURNEYS: ResearchJourney[] = [];
+export const INITIAL_JOURNEYS: ResearchJourney[] = [
+  {
+    id: 'journey-digital-wellbeing',
+    title: 'Digital Wellbeing and Sustainable Research Practice',
+    type: 'phd',
+    description: 'A sample research project for planning a humane, evidence-informed study of digital wellbeing in academic work.',
+    questions: [
+      'How do digital tools shape researchers’ attention, wellbeing, and sense of progress?',
+      'Which individual and institutional practices support sustainable research work?'
+    ],
+    chapters: [
+      {
+        id: 'chapter-dw-introduction',
+        title: 'Introduction',
+        status: 'not_started',
+        content: '',
+        linkedPaperIds: ['paper-3', 'paper-4']
+      },
+      {
+        id: 'chapter-dw-literature',
+        title: 'Literature Review',
+        status: 'not_started',
+        content: '',
+        linkedPaperIds: ['paper-3', 'paper-4']
+      },
+      {
+        id: 'chapter-dw-methods',
+        title: 'Methods',
+        status: 'not_started',
+        content: ''
+      }
+    ],
+    tasks: [
+      { id: 'task-dw-question', text: 'Refine the research questions', completed: false },
+      { id: 'task-dw-sources', text: 'Review the linked starter sources', completed: false },
+      { id: 'task-dw-outline', text: 'Sketch an outline for the literature review', completed: false }
+    ],
+    timeline: [
+      {
+        id: 'timeline-dw-start',
+        date: '2026-08-17',
+        title: 'Sample project created',
+        description: 'Use this project as a starting point, then adapt or replace it with your own work.',
+        type: 'milestone'
+      }
+    ],
+    linkedPaperIds: ['paper-3', 'paper-4']
+  },
+  {
+    id: 'journey-ai-society',
+    title: 'Critical AI and Society',
+    type: 'journal',
+    description: 'A sample article project for developing a critical perspective on AI systems and their social consequences.',
+    questions: [
+      'What social assumptions are embedded in contemporary AI systems?',
+      'How can researchers communicate limitations, accountability, and public impact clearly?'
+    ],
+    chapters: [
+      {
+        id: 'chapter-ai-opening',
+        title: 'Opening Argument',
+        status: 'not_started',
+        content: '',
+        linkedPaperIds: ['paper-1']
+      },
+      {
+        id: 'chapter-ai-evidence',
+        title: 'Evidence and Examples',
+        status: 'not_started',
+        content: '',
+        linkedPaperIds: ['paper-1']
+      },
+      {
+        id: 'chapter-ai-conclusion',
+        title: 'Conclusion',
+        status: 'not_started',
+        content: ''
+      }
+    ],
+    tasks: [
+      { id: 'task-ai-scope', text: 'Define the article’s scope and audience', completed: false },
+      { id: 'task-ai-evidence', text: 'Collect supporting evidence and examples', completed: false }
+    ],
+    timeline: [
+      {
+        id: 'timeline-ai-start',
+        date: '2026-08-17',
+        title: 'Sample project created',
+        description: 'All writing areas are intentionally blank and ready for your own draft.',
+        type: 'milestone'
+      }
+    ],
+    linkedPaperIds: ['paper-1']
+  }
+];
 
 export const WELLBEING_RESOURCES = {
   impostorSyndrome: {
