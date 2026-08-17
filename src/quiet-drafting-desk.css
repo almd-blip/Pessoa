@@ -87,7 +87,7 @@
   border-color: #912A4A !important;
 }
 
-#quiet-drafting-desk > div:first-child {
+#quiet-drafting-desk > div:has(button[aria-label="Dismiss Pause Reminder"]) {
   background: rgba(29, 158, 117, 0.045) !important;
   border: 0 !important;
   border-left: 3px solid #1D9E75 !important;
@@ -96,17 +96,17 @@
   padding: 0.85rem 1rem !important;
 }
 
-#quiet-drafting-desk > div:first-child span {
+#quiet-drafting-desk > div:has(button[aria-label="Dismiss Pause Reminder"]) span {
   font-style: normal !important;
 }
 
-#quiet-drafting-desk > div:first-child > div span:last-child {
+#quiet-drafting-desk > div:has(button[aria-label="Dismiss Pause Reminder"]) > div span:last-child {
   font-size: 0.95rem;
   font-weight: 500;
   color: #1B0A3B !important;
 }
 
-#quiet-drafting-desk > div:first-child button {
+#quiet-drafting-desk > div:has(button[aria-label="Dismiss Pause Reminder"]) button {
   background: transparent !important;
   box-shadow: none !important;
 }
@@ -189,11 +189,11 @@
   border-color: rgba(255, 255, 255, 0.14) !important;
 }
 
-.dark #quiet-drafting-desk > div:first-child {
+.dark #quiet-drafting-desk > div:has(button[aria-label="Dismiss Pause Reminder"]) {
   background: rgba(29, 158, 117, 0.09) !important;
 }
 
-.dark #quiet-drafting-desk > div:first-child > div span:last-child {
+.dark #quiet-drafting-desk > div:has(button[aria-label="Dismiss Pause Reminder"]) > div span:last-child {
   color: #ffffff !important;
 }
 
