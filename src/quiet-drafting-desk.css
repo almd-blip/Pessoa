@@ -1,0 +1,203 @@
+/* Quiet Drafting Desk — presentation-only refinement
+   Keeps the existing writing, navigation, data and controls unchanged. */
+
+#second-thought-writing-studio {
+  gap: 1.5rem;
+}
+
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) {
+  align-items: flex-start;
+  padding: 0 0 1.25rem;
+  border-bottom-color: rgba(145, 42, 74, 0.18) !important;
+  gap: 1.25rem;
+}
+
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child {
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) h2 {
+  font-size: 1.25rem;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  font-weight: 600;
+}
+
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) h2 + span {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  color: #6f6870 !important;
+  font-weight: 500;
+  padding: 0.1rem 0 !important;
+  letter-spacing: 0.02em;
+}
+
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) select {
+  min-height: 2rem;
+  padding: 0.35rem 1.8rem 0.35rem 0.65rem !important;
+  border: 1px solid rgba(145, 42, 74, 0.16) !important;
+  border-radius: 0.65rem;
+  background: rgba(255, 255, 255, 0.72) !important;
+  color: #1B0A3B !important;
+  box-shadow: none !important;
+}
+
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) select:hover,
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) select:focus {
+  border-color: rgba(145, 42, 74, 0.32) !important;
+  outline: none;
+}
+
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child {
+  gap: 0.75rem;
+}
+
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child > .relative > div {
+  background: transparent !important;
+  border-color: rgba(145, 42, 74, 0.16) !important;
+  box-shadow: none !important;
+  min-height: 2rem;
+}
+
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) #desk-print-notes-btn {
+  background: transparent !important;
+  border-color: rgba(145, 42, 74, 0.2) !important;
+  color: #1B0A3B !important;
+  box-shadow: none !important;
+  font-weight: 500;
+}
+
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) #desk-print-notes-btn:hover {
+  background: rgba(145, 42, 74, 0.045) !important;
+  border-color: rgba(145, 42, 74, 0.35) !important;
+}
+
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) #desk-focus-mode-btn {
+  background: transparent !important;
+  border: 1px solid rgba(145, 42, 74, 0.42) !important;
+  color: #912A4A !important;
+  box-shadow: none !important;
+  font-weight: 600;
+}
+
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) #desk-focus-mode-btn:hover {
+  background: rgba(145, 42, 74, 0.06) !important;
+  border-color: #912A4A !important;
+}
+
+#quiet-drafting-desk > div:first-child {
+  background: rgba(29, 158, 117, 0.045) !important;
+  border: 0 !important;
+  border-left: 3px solid #1D9E75 !important;
+  border-radius: 0 0.9rem 0.9rem 0 !important;
+  box-shadow: none !important;
+  padding: 0.85rem 1rem !important;
+}
+
+#quiet-drafting-desk > div:first-child span {
+  font-style: normal !important;
+}
+
+#quiet-drafting-desk > div:first-child > div span:last-child {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #1B0A3B !important;
+}
+
+#quiet-drafting-desk > div:first-child button {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+#quiet-drafting-desk textarea {
+  max-width: 48rem;
+  margin: 0 auto;
+  display: block;
+  font-size: 1rem;
+  line-height: 1.85;
+  letter-spacing: 0.005em;
+  font-style: normal !important;
+}
+
+#quiet-drafting-desk .relative.p-4.sm\:p-6.md\:p-8 {
+  background: #fffdfa !important;
+  border-color: rgba(145, 42, 74, 0.12) !important;
+  border-radius: 1rem !important;
+  box-shadow: none !important;
+}
+
+#quiet-drafting-desk .absolute.-right-6 {
+  gap: 0.45rem;
+}
+
+#quiet-drafting-desk .absolute.-right-6 > button {
+  box-shadow: none !important;
+  border-color: rgba(145, 42, 74, 0.14) !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  min-height: 2.15rem;
+}
+
+#quiet-drafting-desk .absolute.-right-6 > button:hover {
+  box-shadow: none !important;
+}
+
+@media (max-width: 767px) {
+  #second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child,
+  #second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child {
+    width: 100%;
+  }
+
+  #second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child {
+    align-items: stretch;
+  }
+
+  #second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child > div:first-child {
+    flex: 1 1 100%;
+  }
+
+  #second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child > div:last-child {
+    width: 100%;
+  }
+
+  #second-thought-writing-studio > div:has(#desk-print-notes-btn) #desk-print-notes-btn,
+  #second-thought-writing-studio > div:has(#desk-print-notes-btn) #desk-focus-mode-btn {
+    flex: 1;
+    justify-content: center;
+  }
+
+  #quiet-drafting-desk textarea {
+    max-width: none;
+  }
+
+  #quiet-drafting-desk .absolute.-right-6 {
+    position: static;
+    flex-direction: row;
+    overflow-x: auto;
+    margin-top: 0.75rem;
+  }
+}
+
+.dark #second-thought-writing-studio > div:has(#desk-print-notes-btn) h2 + span {
+  color: #c8c2c8 !important;
+}
+
+.dark #second-thought-writing-studio > div:has(#desk-print-notes-btn) select {
+  background: rgba(27, 10, 59, 0.48) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+.dark #quiet-drafting-desk > div:first-child {
+  background: rgba(29, 158, 117, 0.09) !important;
+}
+
+.dark #quiet-drafting-desk > div:first-child > div span:last-child {
+  color: #ffffff !important;
+}
+
+.dark #quiet-drafting-desk .relative.p-4.sm\:p-6.md\:p-8 {
+  background: rgba(27, 10, 59, 0.55) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
