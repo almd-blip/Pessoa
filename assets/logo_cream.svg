@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 280" width="100%" height="100%">
+  <defs>
+    <!-- Sweep gradient for watercolor paint stroke brush circle -->
+    <linearGradient id="brushGradCream" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0a9396" /> <!-- deep teal -->
+      <stop offset="35%" stop-color="#94d2bd" /> <!-- light teal -->
+      <stop offset="70%" stop-color="#ee9b00" /> <!-- warm gold -->
+      <stop offset="100%" stop-color="#8a1834" /> <!-- rich burgundy -->
+    </linearGradient>
+    <filter id="subtleShadowCream" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-color="#000" flood-opacity="0.1" />
+    </filter>
+  </defs>
+
+  <g transform="translate(10, -10)">
+    <!-- Brush stroke circle icon on the left -->
+    <g transform="translate(110, 150)" filter="url(#subtleShadowCream)">
+      <!-- Multi-arc textured paint ring representing look, ask, second thought -->
+      <!-- Left & Bottom stroke -->
+      <path d="M -30,-80 A 85,85 0 1,0 75,45" fill="none" stroke="url(#brushGradCream)" stroke-width="16" stroke-linecap="round" opacity="0.95" />
+      
+      <!-- Faded accent inner strokes for watercolor texture depth -->
+      <path d="M -45,-55 A 80,80 0 1,0 55,60" fill="none" stroke="#0a9396" stroke-width="6" stroke-linecap="round" opacity="0.5" />
+      <path d="M -15,-90 A 90,90 0 0,1 65,-45" fill="none" stroke="#ee9b00" stroke-width="8" stroke-linecap="round" opacity="0.75" />
+      
+      <!-- Right-side burgundy brush return -->
+      <path d="M 60,-65 A 85,85 0 0,1 78,40" fill="none" stroke="#8a1834" stroke-width="14" stroke-linecap="round" opacity="0.9" />
+
+      <!-- Splatters / Dots on the upper-right sweep (Teal, Gold, Burgundy) -->
+      <circle cx="72" cy="-56" r="8" fill="#0a9396" />
+      <circle cx="85" cy="-34" r="9" fill="#ee9b00" />
+      <circle cx="92" cy="-8" r="7" fill="#8a1834" />
+
+      <!-- Centered "ST" overlapping initials with high quality typeface styling (dark purple colored for light background) -->
+      <text x="-25" y="24" font-family="'Inter', 'Playfair Display', 'Georgia', serif" font-size="76" font-weight="200" fill="#2d124d" letter-spacing="-3" opacity="0.95">S</text>
+      <text x="14" y="38" font-family="'Inter', 'Playfair Display', 'Georgia', serif" font-size="60" font-weight="300" fill="#2d124d" opacity="0.95">T</text>
+    </g>
+
+    <!-- Right-side Corporate/Academic Typography Group -->
+    <g transform="translate(270, 0)">
+      <!-- "Second Thought" title in elegant display font (dark purple) -->
+      <text x="0" y="145" font-family="'Inter', 'Outfit', 'Trebuchet MS', sans-serif" font-size="74" font-weight="300" fill="#2d124d" letter-spacing="4">Second Thought</text>
+      
+      <!-- Styled Burgundy Divider and "Publishing" Subtitle -->
+      <!-- Left line segment -->
+      <line x1="0" y1="192" x2="110" y2="192" stroke="#8a1834" stroke-width="4.5" stroke-linecap="round" />
+      <!-- Text -->
+      <text x="135" y="203" font-family="'Inter', 'Arial Black', sans-serif" font-size="34" font-weight="700" fill="#8a1834" letter-spacing="14">Publishing</text>
+      <!-- Right line segment -->
+      <line x1="470" y1="192" x2="580" y2="192" stroke="#8a1834" stroke-width="4.5" stroke-linecap="round" />
+
+      <!-- Tagline: "Look. Ask. Think a second time." -->
+      <text x="5" y="255" font-family="'Inter', 'Courier New', sans-serif" font-size="28" font-weight="400" letter-spacing="2">
+        <tspan fill="#0a9396" font-weight="600">Look.</tspan>
+        <tspan fill="#ee9b00" font-weight="600"> Ask.</tspan>
+        <tspan fill="#2d124d" font-weight="300"> Think a second time.</tspan>
+      </text>
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,395 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+@import "tailwindcss";
+
+@variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Outfit", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "Outfit", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-serif: "Outfit", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  --color-teal-brand: #1D9E75;
+  --color-burgundy-brand: #912A4A;
+  --color-indigo-brand: #1B0A3B;
+  --color-amber-brand: #C87D20;
+  --color-light-brand: #FAF8F5;
+
+  --color-black: #1B0A3B;
+  --color-stone-900: #1B0A3B;
+  --color-stone-950: #1B0A3B;
+  --color-gray-900: #1B0A3B;
+  --color-gray-950: #1B0A3B;
+  --color-zinc-900: #1B0A3B;
+  --color-zinc-950: #1B0A3B;
+  --color-neutral-900: #1B0A3B;
+  --color-neutral-950: #1B0A3B;
+  --color-slate-900: #1B0A3B;
+  --color-slate-950: #1B0A3B;
+}
+
+:root {
+  --brand-teal: #1D9E75;
+  --brand-burgundy: #912A4A;
+  --brand-indigo: #1B0A3B;
+  --brand-amber: #C87D20;
+  --brand-light: #FAF8F5;
+}
+
+/* Horizontal Dividers and Architectural Furniture in Burgundy */
+hr,
+.divider-burgundy,
+.furniture-divider {
+  border-color: rgba(145, 42, 74, 0.25) !important;
+}
+
+.dark hr,
+.dark .divider-burgundy,
+.dark .furniture-divider {
+  border-color: rgba(145, 42, 74, 0.4) !important;
+}
+
+body {
+  font-family: var(--font-sans);
+  text-align: left;
+  background-color: #FAF8F5;
+  color: #1B0A3B;
+  font-size: 14px;
+}
+
+body, button, input, select, textarea, optgroup {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Global Typography & Accessibility Directives - Minimum 12px font size */
+*, *::before, *::after {
+  text-transform: none !important;
+  font-style: normal !important;
+}
+
+/* Ensure smallest text on any element is at least 12px */
+.text-\[8px\], .text-\[9px\], .text-\[10px\], .text-\[11px\] {
+  font-size: 12px !important;
+  line-height: 1.25 !important;
+}
+
+p, h1, h2, h3, h4, h5, h6, span, div, label, input, button, select, textarea, th, td, a, li, small, badge, time, code {
+  text-align: left !important;
+}
+
+/* Dyslexia-Friendly Accessibility Font: Atkinson Hyperlegible */
+.font-dyslexic,
+.font-dyslexic *,
+body.font-dyslexic,
+body.font-dyslexic *,
+[data-font="dyslexic"],
+[data-font="dyslexic"] * {
+  font-family: 'Atkinson Hyperlegible', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  letter-spacing: 0.03em;
+  word-spacing: 0.06em;
+  line-height: 1.65 !important;
+}
+
+/* Custom fade animation for seamless module transitions */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(120, 110, 90, 0.15);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(120, 110, 90, 0.3);
+}
+
+/* Checkboxes */
+input[type="checkbox"] {
+  accent-color: #1D9E75;
+}
+
+input[type="checkbox"]:checked {
+  accent-color: #1D9E75;
+}
+
+.dark input[type="checkbox"],
+.dark input[type="checkbox"]:checked {
+  accent-color: #28c093;
+}
+
+/* High Contrast Mode CSS Rules */
+.high-contrast {
+  --border-primary: #1B0A3B !important;
+  --text-main: #1B0A3B !important;
+  --text-muted: #1B0A3B !important;
+}
+
+.dark.high-contrast,
+.dark .high-contrast {
+  --border-primary: #ffffff !important;
+  --text-main: #ffffff !important;
+  --text-muted: #f5f5f4 !important;
+}
+
+/* Apply high-contrast text depth */
+.high-contrast p,
+.high-contrast span,
+.high-contrast h1,
+.high-contrast h2,
+.high-contrast h3,
+.high-contrast h4,
+.high-contrast h5,
+.high-contrast h6,
+.high-contrast label,
+.high-contrast th,
+.high-contrast td,
+.high-contrast code,
+.high-contrast pre {
+  color: var(--text-main) !important;
+  font-weight: 500 !important;
+}
+
+/* Overwrite muted texts to much deeper weights and colors */
+.high-contrast .text-stone-400,
+.high-contrast .text-stone-500,
+.high-contrast .text-stone-600,
+.high-contrast .text-stone-700,
+.high-contrast .text-gray-400,
+.high-contrast .text-gray-500,
+.high-contrast .text-gray-600,
+.high-contrast .text-zinc-400,
+.high-contrast .text-zinc-500,
+.high-contrast .text-zinc-600,
+.high-contrast .text-slate-400,
+.high-contrast .text-slate-500,
+.high-contrast .text-slate-600,
+.high-contrast .text-neutral-400,
+.high-contrast .text-neutral-500,
+.high-contrast .text-neutral-600 {
+  color: var(--text-muted) !important;
+  font-weight: 500 !important;
+}
+
+/* Elevate borders and dividers */
+.high-contrast .border,
+.high-contrast .border-t,
+.high-contrast .border-b,
+.high-contrast .border-l,
+.high-contrast .border-r,
+.high-contrast div[class*="border-"] {
+  border-color: var(--border-primary) !important;
+  border-width: 1.5px !important;
+}
+
+/* High contrast inputs and textareas */
+.high-contrast input,
+.high-contrast textarea,
+.high-contrast select {
+  border: 2px solid var(--border-primary) !important;
+  color: var(--text-main) !important;
+  background-color: transparent !important;
+}
+
+/* High contrast buttons and active tabs */
+.high-contrast button {
+  border: 1.5px solid var(--border-primary) !important;
+}
+
+.high-contrast button[aria-selected="true"],
+.high-contrast button[role="tab"][aria-selected="true"] {
+  background-color: var(--border-primary) !important;
+  color: var(--text-main-inverse, #ffffff) !important;
+  font-weight: 700 !important;
+}
+
+.dark.high-contrast button[aria-selected="true"],
+.dark .high-contrast button[aria-selected="true"],
+.dark .high-contrast button[role="tab"][aria-selected="true"] {
+  background-color: #ffffff !important;
+  color: #1B0A3B !important;
+}
+
+/* Enhance SVGs stroke and fill for perfect readability */
+.high-contrast svg {
+  stroke: var(--border-primary) !important;
+  stroke-width: 2.25px !important;
+}
+
+.dark .high-contrast svg {
+  stroke: #ffffff !important;
+}
+
+/* Custom Dark Theme Rules: Muted/Grey text to White, Yellow/Amber text to Burgundy (#912A4A) */
+.dark [class*="text-stone-"],
+.dark [class*="text-gray-"],
+.dark [class*="text-slate-"],
+.dark [class*="text-zinc-"],
+.dark [class*="text-neutral-"],
+.dark .text-stone-100, .dark .text-stone-200, .dark .text-stone-300, .dark .text-stone-400, .dark .text-stone-500, .dark .text-stone-600, .dark .text-stone-700, .dark .text-stone-800, .dark .text-stone-900,
+.dark .text-gray-100, .dark .text-gray-200, .dark .text-gray-300, .dark .text-gray-400, .dark .text-gray-500, .dark .text-gray-600, .dark .text-gray-700, .dark .text-gray-800, .dark .text-gray-900,
+.dark .text-slate-100, .dark .text-slate-200, .dark .text-slate-300, .dark .text-slate-400, .dark .text-slate-500, .dark .text-slate-600, .dark .text-slate-700, .dark .text-slate-800, .dark .text-slate-900,
+.dark .text-zinc-100, .dark .text-zinc-200, .dark .text-zinc-300, .dark .text-zinc-400, .dark .text-zinc-500, .dark .text-zinc-600, .dark .text-zinc-700, .dark .text-zinc-800, .dark .text-zinc-900,
+.dark .text-neutral-100, .dark .text-neutral-200, .dark .text-neutral-300, .dark .text-neutral-400, .dark .text-neutral-500, .dark .text-neutral-600, .dark .text-neutral-700, .dark .text-neutral-800, .dark .text-neutral-900,
+.dark .dark\:text-stone-100, .dark .dark\:text-stone-200, .dark .dark\:text-stone-300, .dark .dark\:text-stone-400, .dark .dark\:text-stone-500, .dark .dark\:text-stone-600, .dark .dark\:text-stone-700, .dark .dark\:text-stone-800, .dark .dark\:text-stone-900,
+.dark .dark\:text-gray-100, .dark .dark\:text-gray-200, .dark .dark\:text-gray-300, .dark .dark\:text-gray-400, .dark .dark\:text-gray-500, .dark .dark\:text-gray-600, .dark .dark\:text-gray-700, .dark .dark\:text-gray-800, .dark .dark\:text-gray-900,
+.dark .dark\:text-slate-100, .dark .dark\:text-slate-200, .dark .dark\:text-slate-300, .dark .dark\:text-slate-400, .dark .dark\:text-slate-500, .dark .dark\:text-slate-600, .dark .dark\:text-slate-700, .dark .dark\:text-slate-800, .dark .dark\:text-slate-900,
+.dark .dark\:text-zinc-100, .dark .dark\:text-zinc-200, .dark .dark\:text-zinc-300, .dark .dark\:text-zinc-400, .dark .dark\:text-zinc-500, .dark .dark\:text-zinc-600, .dark .dark\:text-zinc-700, .dark .dark\:text-zinc-800, .dark .dark\:text-zinc-900,
+.dark .dark\:text-neutral-100, .dark .dark\:text-neutral-200, .dark .dark\:text-neutral-300, .dark .dark\:text-neutral-400, .dark .dark\:text-neutral-500, .dark .dark\:text-neutral-600, .dark .dark\:text-neutral-700, .dark .dark\:text-neutral-800, .dark .dark\:text-neutral-900 {
+  color: #ffffff !important;
+}
+
+/* Propagate the colors correctly to svg elements inside grey/stone parent containers */
+.dark [class*="text-stone-"] svg,
+.dark [class*="text-gray-"] svg,
+.dark [class*="text-slate-"] svg,
+.dark [class*="text-zinc-"] svg,
+.dark [class*="text-neutral-"] svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+/* All black and deep neutral text overridden to Indigo #1B0A3B in light mode */
+:root:not(.dark) .text-black,
+html:not(.dark) .text-black,
+body:not(.dark) .text-black,
+:root:not(.dark) .text-stone-900,
+:root:not(.dark) .text-stone-950,
+:root:not(.dark) .text-gray-900,
+:root:not(.dark) .text-gray-950,
+:root:not(.dark) .text-zinc-900,
+:root:not(.dark) .text-zinc-950,
+:root:not(.dark) .text-neutral-900,
+:root:not(.dark) .text-neutral-950,
+:root:not(.dark) .text-slate-900,
+:root:not(.dark) .text-slate-950 {
+  color: #1B0A3B !important;
+}
+
+/* ==========================================================================
+   MINIMAL & CLEAN PRINT STYLESHEET FOR OFFLINE READING
+   ========================================================================== */
+@media print {
+  /* Page Setup & Margins */
+  @page {
+    size: portrait;
+    margin: 18mm 15mm;
+  }
+
+  /* Force white background & dark text across entire page */
+  html, body, #scholar-companion-root, main {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #111111 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+  }
+
+  /* Hide interactive chrome: sidebar, navigation, floating buttons, overlays, footers */
+  aside,
+  nav,
+  button:not(.print-keep),
+  .no-print,
+  #about-section-controls,
+  #about-spec-banner,
+  [role="tablist"],
+  [class*="fixed"],
+  .shadow-lg,
+  .shadow-xl,
+  .shadow-2xl,
+  .backdrop-blur-xs,
+  .backdrop-blur-md {
+    display: none !important;
+  }
+
+  /* Explicit print display helpers */
+  .print\:block {
+    display: block !important;
+  }
+  .print\:flex {
+    display: flex !important;
+  }
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Dark mode overrides for pure paper printing */
+  .dark, .dark * {
+    background-color: #ffffff !important;
+    color: #111111 !important;
+    border-color: #d1d5db !important;
+  }
+
+  /* Format About Page for Print */
+  #about-module {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Force all expandable content blocks in About page to display in print */
+  [id^="about-content-"] {
+    display: block !important;
+    height: auto !important;
+    opacity: 1 !important;
+    overflow: visible !important;
+  }
+
+  /* Hide accordion plus/minus toggle indicators in print */
+  [aria-hidden="true"] {
+    display: none !important;
+  }
+
+  /* Prevent page breaks inside cards & principles */
+  div[id^="about-item-"],
+  .page-break-inside-avoid {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    margin-bottom: 1.25rem !important;
+  }
+
+  /* Sharp legibility for typography */
+  p, h1, h2, h3, h4, h5, h6, span, li, div {
+    color: #111111 !important;
+    text-shadow: none !important;
+    font-size: 100% !important;
+  }
+
+  /* Remove borders and shadows from interactive cards when printing */
+  .border, div[class*="border-"] {
+    border-color: #e5e7eb !important;
+  }
+
+  /* Expand textareas in print mode so full content is visible without scrolling */
+  textarea {
+    border: none !important;
+    resize: none !important;
+    overflow: visible !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+}
+
+

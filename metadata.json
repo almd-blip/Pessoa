@@ -1,0 +1,6 @@
+{
+  "name": "Pessoa",
+  "description": "An offline-first, AI-assisted research and writing companion helping scholars and authors connect literature, verify claims, track milestones, and support wellbeing.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
