@@ -12,7 +12,7 @@ interface BrandLogoProps {
 }
 
 export default function BrandLogo({ settings, className = 'w-32' }: BrandLogoProps) {
-  const isDark = settings?.theme === 'dark';
+  const isDark = settings?.displayMode === 'dark';
   const logoSrc = isDark ? '/assets/logo_cream.svg' : '/assets/logo_transparent.svg';
 
   return (

@@ -223,20 +223,17 @@ export default function ResearchWorkspace({
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saved'>('idle');
   const saveTimeoutRef = useRef<number | null>(null);
 
-  const activeJourney = journeys.find((j) => j.id === activeJourneyId) || journeys[0];
+  // A stored project list can legitimately be empty. Keep the active project nullable
+  // and never dereference a possibly corrupted entry during selection.
+  const activeJourney = (journeys && journeys.length > 0)
+    ? (journeys.find((journey) => journey && journey.id === activeJourneyId) || journeys[0])
+    : null;
 
-if (!activeJourney) {
-  return (
-    <div className="p-8 text-center text-stone-500">
-      <p>No research projects yet. Create one to get started.</p>
-    </div>
-  );
-}
-  // Sync selected chapter on load or active journey change
+  // Sync selected chapter on load or active journey change.
   useEffect(() => {
-    if (activeJourney && activeJourney.chapters.length > 0) {
-      if (!selectedChapterId || !activeJourney.chapters.some(c => c.id === selectedChapterId)) {
-        setSelectedChapterId(activeJourney.chapters[0].id);
+    if (activeJourney && Array.isArray(activeJourney.chapters) && activeJourney.chapters.length > 0) {
+      if (!selectedChapterId || !activeJourney.chapters.some((chapter) => chapter && chapter.id === selectedChapterId)) {
+        setSelectedChapterId(activeJourney.chapters[0]?.id || '');
       }
     }
   }, [activeJourney, selectedChapterId]);
@@ -287,7 +284,7 @@ if (!activeJourney) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isFocusMode, isReflectionShelfOpen, bottomContextDrawer, isAddingProject, isPrintModalOpen]);
 
-  const activeChapter = activeJourney?.chapters.find((ch) => ch.id === selectedChapterId) || activeJourney?.chapters[0];
+  const activeChapter = activeJourney?.chapters?.find((chapter) => chapter && chapter.id === selectedChapterId) || activeJourney?.chapters?.[0];
 
   // Derive sources directly linked to the active chapter or section in the writing area
   const chapterPaperIds: string[] = (activeChapter && activeChapter.linkedPaperIds)
@@ -512,6 +509,16 @@ if (!activeJourney) {
     });
   };
 
+  const handleDeleteTask = (taskId: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!activeJourney) return;
+    const updatedTasks = activeJourney.tasks.filter((t) => t.id !== taskId);
+    onUpdateJourney({
+      ...activeJourney,
+      tasks: updatedTasks,
+    });
+  };
+
   const handleAddReflection = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newThoughtText.trim()) return;
@@ -539,6 +546,23 @@ if (!activeJourney) {
     setCopiedReflectionId(id);
     setTimeout(() => setCopiedReflectionId(null), 2000);
   };
+
+  // All hooks above execute on every render. When there are no projects, show the
+  // existing project-creation flow rather than dereferencing a null active project.
+  if (!activeJourney) {
+    return (
+      <section className="w-full max-w-2xl mx-auto rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 p-6 sm:p-8 text-left">
+        <p className="font-sans text-xs font-semibold uppercase tracking-wider text-[#912A4A] dark:text-rose-400">Projects</p>
+        <h2 className="mt-2 font-serif text-2xl font-bold text-stone-900 dark:text-stone-100">Create your first project</h2>
+        <p className="mt-2 text-sm text-stone-600 dark:text-stone-400">Your project list is empty. Create a project to start planning, writing, and tracking tasks.</p>
+        <form onSubmit={handleCreateProject} className="mt-6 space-y-4">
+          <input value={pTitle} onChange={(event) => setPTitle(event.target.value)} placeholder="Project title" aria-label="Project title" className="w-full rounded-lg border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 px-3 py-2 text-sm" autoFocus />
+          <textarea value={pDesc} onChange={(event) => setPDesc(event.target.value)} placeholder="Brief description (optional)" aria-label="Project description" className="w-full rounded-lg border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 px-3 py-2 text-sm" rows={3} />
+          <button type="submit" className="rounded-lg bg-[#912A4A] px-4 py-2 text-sm font-semibold text-white hover:bg-[#78223d]">Create Project</button>
+        </form>
+      </section>
+    );
+  }
 
   // Focus mode view
   if (isFocusMode) {
@@ -1322,13 +1346,13 @@ if (!activeJourney) {
                 <div
                   key={task.id}
                   onClick={() => handleToggleTask(task.id)}
-                  className={`p-3 rounded-lg border cursor-pointer flex items-center justify-between transition-all ${
+                  className={`group p-3 rounded-lg border cursor-pointer flex items-center justify-between transition-all ${
                     task.completed
                       ? 'bg-teal-50/30 dark:bg-teal-950/20 text-stone-400 border-teal-200/60 dark:border-teal-900/40'
                       : 'bg-stone-50 dark:bg-stone-950 text-stone-800 dark:text-stone-200 border-stone-200/70 dark:border-stone-800 hover:border-[#1D9E75]/40'
                   }`}
                 >
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex items-center gap-2.5 min-w-0 pr-2">
                     <div
                       className={`w-4 h-4 rounded border flex items-center justify-center transition-colors shrink-0 ${
                         task.completed
@@ -1338,11 +1362,22 @@ if (!activeJourney) {
                     >
                       {task.completed && <Check className="w-3 h-3 stroke-[2.5]" />}
                     </div>
-                    <span className={task.completed ? 'line-through text-stone-400' : 'font-medium'}>
+                    <span className={`truncate ${task.completed ? 'line-through text-stone-400' : 'font-medium'}`}>
                       {task.text}
                     </span>
                   </div>
-                  {task.completed && <Check className="w-4 h-4 text-[#1D9E75] dark:text-[#28c093]" />}
+                  <div className="flex items-center gap-2 shrink-0">
+                    {task.completed && <Check className="w-4 h-4 text-[#1D9E75] dark:text-[#28c093]" />}
+                    <button
+                      type="button"
+                      onClick={(e) => handleDeleteTask(task.id, e)}
+                      className="p-1.5 text-stone-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-md transition-all cursor-pointer"
+                      title="Delete task"
+                      aria-label={`Delete task ${task.text}`}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -2195,11 +2230,11 @@ if (!activeJourney) {
                   <div
                     key={task.id}
                     onClick={() => handleToggleTask(task.id)}
-                    className={`p-2.5 rounded-lg border text-xs cursor-pointer flex justify-between items-center transition-colors ${
+                    className={`group p-2.5 rounded-lg border text-xs cursor-pointer flex justify-between items-center transition-colors ${
                       task.completed ? 'bg-teal-50/10 text-stone-400 border-teal-200/40 dark:border-teal-900/30' : 'bg-white/60 dark:bg-stone-900/60 text-stone-800 dark:text-stone-200 border-stone-200/60 dark:border-stone-800'
                     }`}
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 min-w-0 pr-2">
                       <div
                         className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors shrink-0 ${
                           task.completed
@@ -2209,9 +2244,20 @@ if (!activeJourney) {
                       >
                         {task.completed && <Check className="w-2.5 h-2.5 stroke-[2.5]" />}
                       </div>
-                      <span className={task.completed ? 'line-through' : ''}>{task.text}</span>
+                      <span className={`truncate ${task.completed ? 'line-through' : ''}`}>{task.text}</span>
                     </div>
-                    {task.completed && <Check className="w-3.5 h-3.5 text-[#1D9E75] dark:text-[#28c093]" />}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {task.completed && <Check className="w-3.5 h-3.5 text-[#1D9E75] dark:text-[#28c093]" />}
+                      <button
+                        type="button"
+                        onClick={(e) => handleDeleteTask(task.id, e)}
+                        className="p-1.5 text-stone-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-md transition-all cursor-pointer"
+                        title="Delete task"
+                        aria-label={`Delete task ${task.text}`}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>

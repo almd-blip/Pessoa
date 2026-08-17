@@ -10,6 +10,7 @@ import { AccessibilitySettings, DEFAULT_ACCESSIBILITY_SETTINGS } from '../types'
 
 interface SettingsProps {
   onResetAllData: () => void;
+  onRestoreDemoData?: () => void;
   defaultTab?: 'profile' | 'appearance' | 'backup' | 'ai' | 'notifications';
   accessibilitySettings?: AccessibilitySettings;
   onAccessibilitySettingsChange?: (settings: AccessibilitySettings) => void;
@@ -17,6 +18,7 @@ interface SettingsProps {
 
 export default function Settings({ 
   onResetAllData, 
+  onRestoreDemoData,
   defaultTab,
   accessibilitySettings,
   onAccessibilitySettingsChange
@@ -209,67 +211,11 @@ export default function Settings({
 
       {/* TAB 3: AI OPTIONS & LOCAL RUNTIME LAYER */}
       {activeTab === 'ai' && (
-        <div className="space-y-6 animate-fadeIn">
+        <div className="animate-fadeIn">
           {/* Local AI Offline Runtime Manager */}
           <LocalAIRuntimeManager
             onConfigSaved={() => triggerToast('AI settings saved.')}
           />
-
-          {/* Scholar Persona & Guidance Options */}
-          <form onSubmit={handleSaveAIOptions} className="bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg p-6 space-y-4 shadow-xs">
-            <h3 className="font-sans font-semibold text-stone-950 dark:text-stone-100 text-xs flex items-center gap-2 border-b border-stone-100 dark:border-stone-850 pb-2">
-              AI Companion Guidance
-            </h3>
-
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <span className="font-sans text-[10px] text-stone-600 dark:text-stone-400 font-bold block text-left">Information sources</span>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setGroundingLevel('strict')}
-                    className={`flex-1 py-2 px-4 rounded border text-xs cursor-pointer text-center transition-all focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 dark:focus:ring-offset-stone-950 ${
-                      groundingLevel === 'strict'
-                        ? 'bg-amber-900/10 dark:bg-amber-500/10 border-amber-900 dark:border-amber-500 text-amber-950 dark:text-amber-400 font-bold shadow-xs'
-                        : 'bg-stone-50 dark:bg-stone-900/40 border-stone-200 dark:border-stone-800 text-stone-500 dark:text-stone-400 font-normal hover:bg-stone-100 dark:hover:bg-stone-800/60'
-                    }`}
-                  >
-                    Strict (only my library)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setGroundingLevel('balanced')}
-                    className={`flex-1 py-2 px-4 rounded border text-xs cursor-pointer text-center transition-all focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 dark:focus:ring-offset-stone-950 ${
-                      groundingLevel === 'balanced'
-                        ? 'bg-amber-900/10 dark:bg-amber-500/10 border-amber-900 dark:border-amber-500 text-amber-950 dark:text-amber-400 font-bold shadow-xs'
-                        : 'bg-stone-50 dark:bg-stone-900/40 border-stone-200 dark:border-stone-800 text-stone-500 dark:text-stone-400 font-normal hover:bg-stone-100 dark:hover:bg-stone-800/60'
-                    }`}
-                  >
-                    Balanced (include general literature & sources)
-                  </button>
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label htmlFor="custom-instructions" className="font-sans text-[10px] text-stone-600 dark:text-stone-400 font-bold block text-left">Custom instructions</label>
-                <textarea
-                  id="custom-instructions"
-                  value={customPromptGuidance}
-                  onChange={(e) => setCustomPromptGuidance(e.target.value)}
-                  placeholder="Give instructions on how the companion should write, answer, or assist you..."
-                  rows={3}
-                  className="w-full font-sans text-xs p-2.5 border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 text-stone-800 dark:text-white rounded focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent text-left placeholder-stone-400 dark:placeholder-white"
-                />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              className="font-sans text-xs bg-amber-950 dark:bg-amber-900 hover:bg-amber-900 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 dark:focus:ring-offset-stone-950 text-white px-4 py-2 rounded transition-colors cursor-pointer text-center justify-center w-full sm:w-auto"
-            >
-              Save AI settings
-            </button>
-          </form>
         </div>
       )}
 
@@ -339,7 +285,7 @@ export default function Settings({
               </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-center">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
               <button
                 type="button"
                 onClick={handleExportData}
@@ -347,6 +293,20 @@ export default function Settings({
               >
                 Download backup file (.rcp)
               </button>
+
+              {onRestoreDemoData && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onRestoreDemoData();
+                    triggerToast('Original demo projects, library, and milestones restored.');
+                  }}
+                  className="font-sans text-xs border border-emerald-300 dark:border-emerald-800/60 bg-emerald-50/60 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 py-2.5 px-4 rounded flex justify-center items-center gap-1.5 hover:bg-emerald-100/70 dark:hover:bg-emerald-900/50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-stone-950 transition-colors cursor-pointer text-center font-medium"
+                >
+                  Restore original demos
+                </button>
+              )}
+
               
               <button
                 type="button"
