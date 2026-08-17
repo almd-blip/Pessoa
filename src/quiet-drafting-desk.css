@@ -1,6 +1,12 @@
 /* Quiet Drafting Desk — presentation-only refinement
    Keeps the existing writing, navigation, data and controls unchanged. */
 
+/* The sidebar already provides Feedback. The duplicate floating trigger obscures
+   content on smaller screens, so remove that duplicate trigger everywhere. */
+#scholar-companion-root > button.fixed.bottom-4.right-4 {
+  display: none !important;
+}
+
 #second-thought-writing-studio {
   gap: 1.5rem;
 }
