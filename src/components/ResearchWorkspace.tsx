@@ -225,6 +225,13 @@ export default function ResearchWorkspace({
 
   const activeJourney = journeys.find((j) => j.id === activeJourneyId) || journeys[0];
 
+if (!activeJourney) {
+  return (
+    <div className="p-8 text-center text-stone-500">
+      <p>No research projects yet. Create one to get started.</p>
+    </div>
+  );
+}
   // Sync selected chapter on load or active journey change
   useEffect(() => {
     if (activeJourney && activeJourney.chapters.length > 0) {
