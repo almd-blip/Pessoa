@@ -11,12 +11,15 @@ interface BrandLogoProps {
   className?: string;
 }
 
-export default function BrandLogo({ className = "w-28 md:w-32" }: BrandLogoProps) {
+export default function BrandLogo({ settings, className = 'w-32' }: BrandLogoProps) {
+  const isDark = settings?.theme === 'dark';
+  const logoSrc = isDark ? '/assets/logo_cream.svg' : '/assets/logo_transparent.svg';
+
   return (
-    <img 
-      src="/assets/logo_transparent.png" 
-      alt="Pessoa Logo" 
-      className={`${className} h-auto object-contain`}
+    <img
+      src={logoSrc}
+      alt="Research Companion"
+      className={`h-auto object-contain select-none pointer-events-none ${className}`}
       referrerPolicy="no-referrer"
     />
   );
