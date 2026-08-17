@@ -106,63 +106,115 @@ export default function App() {
     return cached ? JSON.parse(cached) : INITIAL_PAPERS;
   });
 
-  const [journeys, setJourneys] = useState<ResearchJourney[]>(() => {
-    const cached = localStorage.getItem('scholar_journeys');
-    return cached ? JSON.parse(cached) : INITIAL_JOURNEYS;
-  });
+  const [papers, setPapers] = useState<Paper[]>(() => {
 
-  const [collections] = useState<Collection[]>(INITIAL_COLLECTIONS);
-  const [activeJourneyId, setActiveJourneyId] = useState<string>(() => journeys[0]?.id || '');
-  const [moodCheckIns, setMoodCheckIns] = useState<MoodCheckIn[]>(() => {
-    const cached = localStorage.getItem('scholar_moods');
-    return cached ? JSON.parse(cached) : [];
-  });
+    try {
 
-  // GLOBAL FOCUS TIMER STATE (persists & ticks across all tabs including Projects screen)
-  const [preferredFocusMinutes, setPreferredFocusMinutes] = useState<number>(() => {
-    const saved = localStorage.getItem('scholar_preferred_focus_minutes');
-    return saved ? Math.max(1, parseInt(saved, 10)) : 25;
-  });
+      const cached = localStorage.getItem('scholar_papers');
 
-  const [preferredBreakMinutes, setPreferredBreakMinutes] = useState<number>(() => {
-    const saved = localStorage.getItem('scholar_preferred_break_minutes');
-    return saved ? Math.max(1, parseInt(saved, 10)) : 5;
-  });
+      if (cached) {
 
-  const [focusTimeLeft, setFocusTimeLeft] = useState<number>(() => preferredFocusMinutes * 60);
-  const [focusTimerRunning, setFocusTimerRunning] = useState<boolean>(false);
-  const [focusIsBreak, setFocusIsBreak] = useState<boolean>(false);
-  const [focusCompletedSessions, setFocusCompletedSessions] = useState<number>(() => {
-    const cached = localStorage.getItem('scholar_focus_completed_sessions');
-    return cached ? parseInt(cached, 10) : 0;
-  });
+        const parsed = JSON.parse(cached);
 
-  // Focus Alert state shown on Projects screen & across all workspace tabs
-  const [focusAlert, setFocusAlert] = useState<{
-    title: string;
-    message: string;
-    type: 'focus_ended' | 'break_ended';
-    timestamp: number;
-  } | null>(null);
+        if (Array.isArray(parsed) && parsed.length > 0 && parsed.every((p) => p && typeof p.id === 'string')) {
 
-  // Focus timer duration changers
-  const changeFocusDuration = (mins: number) => {
-    const validMins = Math.max(1, Math.min(180, mins));
-    setPreferredFocusMinutes(validMins);
-    localStorage.setItem('scholar_preferred_focus_minutes', validMins.toString());
-    if (!focusTimerRunning && !focusIsBreak) {
-      setFocusTimeLeft(validMins * 60);
-    }
-  };
+          return parsed;
 
-  const changeBreakDuration = (mins: number) => {
-    const validMins = Math.max(1, Math.min(60, mins));
-    setPreferredBreakMinutes(validMins);
-    localStorage.setItem('scholar_preferred_break_minutes', validMins.toString());
-    if (!focusTimerRunning && focusIsBreak) {
-      setFocusTimeLeft(validMins * 60);
-    }
-  };
+        }
+
+      }
+
+    } catch (e) {
+
+      console.warn('Failed to parse cached papers:', e);
+
+    }
+
+    return INITIAL_PAPERS;
+
+  });
+
+
+  const [journeys, setJourneys] = useState<ResearchJourney[]>(() => {
+
+    try {
+
+      const cached = localStorage.getItem('scholar_journeys');
+
+      if (cached) {
+
+        const parsed = JSON.parse(cached);
+
+        if (Array.isArray(parsed) && parsed.length > 0 && parsed.every((j) => j && typeof j.id === 'string')) {
+
+          return parsed.map((j) => {
+
+            const initialMatch = INITIAL_JOURNEYS.find(ij => ij.id === j.id);
+
+            const chapters = Array.isArray(j.chapters) && j.chapters.length > 0 
+
+              ? j.chapters 
+
+              : (initialMatch?.chapters || []);
+
+            const tasks = Array.isArray(j.tasks) && j.tasks.length > 0 
+
+              ? j.tasks 
+
+              : (initialMatch?.tasks || []);
+
+            const timeline = Array.isArray(j.timeline) && j.timeline.length > 0
+
+              ? j.timeline
+
+              : (initialMatch?.timeline || []);
+
+            const linkedPaperIds = Array.isArray(j.linkedPaperIds) && j.linkedPaperIds.length > 0
+
+              ? j.linkedPaperIds
+
+              : (initialMatch?.linkedPaperIds || []);
+
+            const questions = Array.isArray(j.questions) && j.questions.length > 0
+
+              ? j.questions
+
+              : (initialMatch?.questions || []);
+
+
+            return {
+
+              ...j,
+
+              questions,
+
+              chapters,
+
+              tasks,
+
+              timeline,
+
+              linkedPaperIds,
+
+            };
+
+          });
+
+        }
+
+      }
+
+    } catch (e) {
+
+      console.warn('Failed to parse cached journeys:', e);
+
+    }
+
+    return INITIAL_JOURNEYS;
+
+  });
+
+
 
   const handlePomodoroReset = () => {
     setFocusTimerRunning(false);
