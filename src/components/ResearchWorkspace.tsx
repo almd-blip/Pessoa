@@ -1853,7 +1853,7 @@ export default function ResearchWorkspace({
                   )}
 
                   {/* SIDE MARGIN TABS (Shelf Tab Model with bookmark and text label, aligned at margin) */}
-                  <div className="absolute -right-3.5 top-12 z-20 flex flex-col gap-2 pointer-events-auto select-none">
+                  <div className="absolute -right-6 top-12 z-20 flex flex-col gap-2 pointer-events-auto select-none">
                     
                     {/* Tab 1: Reflection Shelf */}
                     <button
