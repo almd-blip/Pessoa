@@ -734,7 +734,7 @@ export default function App() {
 
                   {/* Document Analytical, Referencing & Data Tools Submenu */}
                   <div className="pt-2.5 pb-1">
-                    <span className="text-[11.5px] font-sans font-semibold text-[#1B0A3B] dark:text-stone-200 block px-2.5 pl-8">
+                    <span className="text-xs font-sans font-semibold text-[#1B0A3B] dark:text-stone-200 block px-2.5 pl-8">
                       Research & writing tools
                     </span>
                   </div>
@@ -744,7 +744,7 @@ export default function App() {
                       role="tab"
                       aria-selected={activeTab === 'research' && researchSubTab === 'plan'}
                       onClick={() => handleNavigate('research', 'plan')}
-                      className={`w-full text-left px-2.5 py-1.5 rounded-l-md rounded-r-none text-[11px] font-sans flex items-center transition-all cursor-pointer border-l-0 border-t-0 border-b-0 border-r-2 ${
+                      className={`w-full text-left px-2.5 py-1.5 rounded-l-md rounded-r-none text-xs font-sans flex items-center transition-all cursor-pointer border-l-0 border-t-0 border-b-0 border-r-2 ${
                         activeTab === 'research' && researchSubTab === 'plan'
                           ? 'bg-stone-100/90 text-[#1B0A3B] font-semibold border-r-[#1D9E75] dark:bg-stone-800/60 dark:text-white dark:border-r-[#28c093]'
                           : 'text-[#1B0A3B]/80 hover:bg-stone-200/50 hover:text-[#1B0A3B] dark:text-stone-300 dark:hover:bg-[#25114a] dark:hover:text-white border-r-transparent'
@@ -757,7 +757,7 @@ export default function App() {
                       role="tab"
                       aria-selected={activeTab === 'research' && researchSubTab === 'references'}
                       onClick={() => handleNavigate('research', 'references')}
-                      className={`w-full text-left px-2.5 py-1.5 rounded-l-md rounded-r-none text-[11px] font-sans flex items-center transition-all cursor-pointer border-l-0 border-t-0 border-b-0 border-r-2 ${
+                      className={`w-full text-left px-2.5 py-1.5 rounded-l-md rounded-r-none text-xs font-sans flex items-center transition-all cursor-pointer border-l-0 border-t-0 border-b-0 border-r-2 ${
                         activeTab === 'research' && researchSubTab === 'references'
                           ? 'bg-stone-100/90 text-[#1B0A3B] font-semibold border-r-[#1D9E75] dark:bg-stone-800/60 dark:text-white dark:border-r-[#28c093]'
                           : 'text-[#1B0A3B]/80 hover:bg-stone-200/50 hover:text-[#1B0A3B] dark:text-stone-300 dark:hover:bg-[#25114a] dark:hover:text-white border-r-transparent'
@@ -770,7 +770,7 @@ export default function App() {
                       role="tab"
                       aria-selected={activeTab === 'research' && researchSubTab === 'literature'}
                       onClick={() => handleNavigate('research', 'literature')}
-                      className={`w-full text-left px-2.5 py-1.5 rounded-l-md rounded-r-none text-[11px] font-sans flex items-center transition-all cursor-pointer border-l-0 border-t-0 border-b-0 border-r-2 ${
+                      className={`w-full text-left px-2.5 py-1.5 rounded-l-md rounded-r-none text-xs font-sans flex items-center transition-all cursor-pointer border-l-0 border-t-0 border-b-0 border-r-2 ${
                         activeTab === 'research' && researchSubTab === 'literature'
                           ? 'bg-stone-100/90 text-[#1B0A3B] font-semibold border-r-[#1D9E75] dark:bg-stone-800/60 dark:text-white dark:border-r-[#28c093]'
                           : 'text-[#1B0A3B]/80 hover:bg-stone-200/50 hover:text-[#1B0A3B] dark:text-stone-300 dark:hover:bg-[#25114a] dark:hover:text-white border-r-transparent'
@@ -783,7 +783,7 @@ export default function App() {
                       role="tab"
                       aria-selected={activeTab === 'research' && researchSubTab === 'analysis'}
                       onClick={() => handleNavigate('research', 'analysis')}
-                      className={`w-full text-left px-2.5 py-1.5 rounded-l-md rounded-r-none text-[11px] font-sans flex items-center transition-all cursor-pointer border-l-0 border-t-0 border-b-0 border-r-2 ${
+                      className={`w-full text-left px-2.5 py-1.5 rounded-l-md rounded-r-none text-xs font-sans flex items-center transition-all cursor-pointer border-l-0 border-t-0 border-b-0 border-r-2 ${
                         activeTab === 'research' && researchSubTab === 'analysis'
                           ? 'bg-stone-100/90 text-[#1B0A3B] font-semibold border-r-[#1D9E75] dark:bg-stone-800/60 dark:text-white dark:border-r-[#28c093]'
                           : 'text-[#1B0A3B]/80 hover:bg-stone-200/50 hover:text-[#1B0A3B] dark:text-stone-300 dark:hover:bg-[#25114a] dark:hover:text-white border-r-transparent'
@@ -796,7 +796,7 @@ export default function App() {
                       role="tab"
                       aria-selected={activeTab === 'research' && researchSubTab === 'writing'}
                       onClick={() => handleNavigate('research', 'writing')}
-                      className={`w-full text-left px-2.5 py-1.5 rounded-l-md rounded-r-none text-[11px] font-sans flex items-center transition-all cursor-pointer border-l-0 border-t-0 border-b-0 border-r-2 ${
+                      className={`w-full text-left px-2.5 py-1.5 rounded-l-md rounded-r-none text-xs font-sans flex items-center transition-all cursor-pointer border-l-0 border-t-0 border-b-0 border-r-2 ${
                         activeTab === 'research' && researchSubTab === 'writing'
                           ? 'bg-stone-100/90 text-[#1B0A3B] font-semibold border-r-[#1D9E75] dark:bg-stone-800/60 dark:text-white dark:border-r-[#28c093]'
                           : 'text-[#1B0A3B]/80 hover:bg-stone-200/50 hover:text-[#1B0A3B] dark:text-stone-300 dark:hover:bg-[#25114a] dark:hover:text-white border-r-transparent'
@@ -809,7 +809,7 @@ export default function App() {
                       role="tab"
                       aria-selected={activeTab === 'research' && researchSubTab === 'publishing'}
                       onClick={() => handleNavigate('research', 'publishing')}
-                      className={`w-full text-left px-2.5 py-1.5 rounded-l-md rounded-r-none text-[11px] font-sans flex items-center transition-all cursor-pointer border-l-0 border-t-0 border-b-0 border-r-2 ${
+                      className={`w-full text-left px-2.5 py-1.5 rounded-l-md rounded-r-none text-xs font-sans flex items-center transition-all cursor-pointer border-l-0 border-t-0 border-b-0 border-r-2 ${
                         activeTab === 'research' && researchSubTab === 'publishing'
                           ? 'bg-stone-100/90 text-[#1B0A3B] font-semibold border-r-[#1D9E75] dark:bg-stone-800/60 dark:text-white dark:border-r-[#28c093]'
                           : 'text-[#1B0A3B]/80 hover:bg-stone-200/50 hover:text-[#1B0A3B] dark:text-stone-300 dark:hover:bg-[#25114a] dark:hover:text-white border-r-transparent'
@@ -822,7 +822,7 @@ export default function App() {
                       role="tab"
                       aria-selected={activeTab === 'research' && researchSubTab === 'funding'}
                       onClick={() => handleNavigate('research', 'funding')}
-                      className={`w-full text-left px-2.5 py-1.5 rounded-l-md rounded-r-none text-[11px] font-sans flex items-center transition-all cursor-pointer border-l-0 border-t-0 border-b-0 border-r-2 ${
+                      className={`w-full text-left px-2.5 py-1.5 rounded-l-md rounded-r-none text-xs font-sans flex items-center transition-all cursor-pointer border-l-0 border-t-0 border-b-0 border-r-2 ${
                         activeTab === 'research' && researchSubTab === 'funding'
                           ? 'bg-stone-100/90 text-[#1B0A3B] font-semibold border-r-[#1D9E75] dark:bg-stone-800/60 dark:text-white dark:border-r-[#28c093]'
                           : 'text-[#1B0A3B]/80 hover:bg-stone-200/50 hover:text-[#1B0A3B] dark:text-stone-300 dark:hover:bg-[#25114a] dark:hover:text-white border-r-transparent'
@@ -835,7 +835,7 @@ export default function App() {
                       role="tab"
                       aria-selected={activeTab === 'research' && researchSubTab === 'perspective_check'}
                       onClick={() => handleNavigate('research', 'perspective_check')}
-                      className={`w-full text-left px-2.5 py-1.5 rounded-l-md rounded-r-none text-[11px] font-sans flex items-center transition-all cursor-pointer border-l-0 border-t-0 border-b-0 border-r-2 ${
+                      className={`w-full text-left px-2.5 py-1.5 rounded-l-md rounded-r-none text-xs font-sans flex items-center transition-all cursor-pointer border-l-0 border-t-0 border-b-0 border-r-2 ${
                         activeTab === 'research' && researchSubTab === 'perspective_check'
                           ? 'bg-stone-100/90 text-[#1B0A3B] font-semibold border-r-[#1D9E75] dark:bg-stone-800/60 dark:text-white dark:border-r-[#28c093]'
                           : 'text-[#1B0A3B]/80 hover:bg-stone-200/50 hover:text-[#1B0A3B] dark:text-stone-300 dark:hover:bg-[#25114a] dark:hover:text-white border-r-transparent'
@@ -848,7 +848,7 @@ export default function App() {
                       role="tab"
                       aria-selected={activeTab === 'ai_assistant'}
                       onClick={() => handleNavigate('ai_assistant')}
-                      className={`w-full text-left px-2.5 py-1.5 rounded-l-md rounded-r-none text-[11px] font-sans flex items-center transition-all cursor-pointer border-l-0 border-t-0 border-b-0 border-r-2 ${
+                      className={`w-full text-left px-2.5 py-1.5 rounded-l-md rounded-r-none text-xs font-sans flex items-center transition-all cursor-pointer border-l-0 border-t-0 border-b-0 border-r-2 ${
                         activeTab === 'ai_assistant'
                           ? 'bg-stone-100/90 text-[#1B0A3B] font-semibold border-r-[#1D9E75] dark:bg-stone-800/60 dark:text-white dark:border-r-[#28c093]'
                           : 'text-[#1B0A3B]/80 hover:bg-stone-200/50 hover:text-[#1B0A3B] dark:text-stone-300 dark:hover:bg-[#25114a] dark:hover:text-white border-r-transparent'

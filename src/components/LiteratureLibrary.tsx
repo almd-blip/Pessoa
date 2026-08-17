@@ -1357,7 +1357,7 @@ export default function LiteratureLibrary({
                             setSelectedPaper(p);
                             setViewMode('inspector');
                           }}
-                          className="text-[11px] font-sans font-semibold text-[#912A4A] dark:text-rose-400 hover:text-white hover:bg-[#912A4A] px-2.5 py-1 rounded-lg border border-[#912A4A]/30 dark:border-rose-400/30 transition-colors cursor-pointer"
+                          className="text-xs font-sans font-semibold text-[#912A4A] dark:text-rose-400 hover:text-white hover:bg-[#912A4A] px-2.5 py-1 rounded-lg border border-[#912A4A]/30 dark:border-rose-400/30 transition-colors cursor-pointer"
                           title="Open Document Inspector"
                         >
                           Inspect
@@ -1379,44 +1379,33 @@ export default function LiteratureLibrary({
                       </div>
                     </div>
 
-                    {/* Metadata & Tags Row (Strictly Below Title, Sharing Exact Same X Position) */}
-                    <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5">
-                      <div className="flex flex-wrap items-center gap-2 text-xs">
-                        <span className="font-sans text-xs text-stone-600 dark:text-stone-300 font-medium">
+                    {/* Passive metadata follows the title on the shared reading axis. */}
+                    <div className="pt-0.5">
+                      <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-1 text-xs leading-relaxed">
+                        <span className="font-sans text-stone-600 dark:text-stone-300 font-medium">
                           {formatAuthorsShort(p.authors, p.year)}
                         </span>
 
-                        {/* Collection Pill */}
                         {col && (
-                          <span className="px-2 py-0.5 rounded-full border text-[10px] bg-stone-100 dark:bg-stone-800 border-stone-200/80 dark:border-stone-700 text-stone-600 dark:text-stone-300 font-medium">
-                            {col.name}
-                          </span>
+                          <>
+                            <span aria-hidden="true" className="text-stone-300 dark:text-stone-600">·</span>
+                            <span className="font-sans text-stone-500 dark:text-stone-400">{col.name}</span>
+                          </>
                         )}
 
-                        {/* Verification Status */}
+                        <span aria-hidden="true" className="text-stone-300 dark:text-stone-600">·</span>
                         {p.verificationStatus === 'verified' ? (
-                          <span className="text-[10px] bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-200/50 font-medium">
-                            Verified
-                          </span>
+                          <span className="font-sans text-emerald-700 dark:text-emerald-400">Verified</span>
                         ) : (
-                          <span className="text-[10px] bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 px-2 py-0.5 rounded-full border border-amber-200/50 font-medium">
-                            Incomplete
-                          </span>
+                          <span className="font-sans text-amber-700 dark:text-amber-400">Incomplete</span>
                         )}
 
-                        {/* Tags below title */}
-                        {p.tags && p.tags.length > 0 && (
-                          <div className="flex flex-wrap items-center gap-1">
-                            {p.tags.map((tag) => (
-                              <span
-                                key={tag}
-                                className="text-[10px] font-mono px-2 py-0.5 bg-[#912A4A]/5 dark:bg-rose-950/30 text-[#912A4A] dark:text-rose-300 rounded-md border border-[#912A4A]/15 dark:border-rose-900/30"
-                              >
-                                #{tag}
-                              </span>
-                            ))}
-                          </div>
-                        )}
+                        {p.tags?.map((tag) => (
+                          <React.Fragment key={tag}>
+                            <span aria-hidden="true" className="text-stone-300 dark:text-stone-600">·</span>
+                            <span className="font-sans text-[#912A4A] dark:text-rose-300">#{tag}</span>
+                          </React.Fragment>
+                        ))}
                       </div>
                     </div>
                   </div>
@@ -1427,7 +1416,7 @@ export default function LiteratureLibrary({
                       
                       {/* Formatted Citation Preview Snippet (Unboxed with Left Burgundy Accent Aligned to Title X) */}
                       <div className="pl-3.5 border-l-2 border-[#912A4A] text-xs font-serif text-stone-800 dark:text-stone-200 leading-relaxed italic select-all py-1">
-                        <span className="font-mono text-[10px] uppercase font-bold not-italic text-[#912A4A] dark:text-rose-400 mr-1.5">
+                        <span className="font-sans text-xs font-semibold not-italic text-[#912A4A] dark:text-rose-400 mr-1.5">
                           [{citationStyle}]:
                         </span>
                         {formatPaperPreview(p, citationStyle)}
