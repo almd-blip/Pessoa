@@ -3,6 +3,7 @@ import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 import './quiet-drafting-desk.css';
+import './restore-writing-alignment.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
