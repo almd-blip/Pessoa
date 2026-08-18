@@ -13,10 +13,32 @@
   margin-left: 0 !important;
 }
 
+/* Project, Chapter and Print Notes share one baseline and quiet visual weight. */
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child {
+  align-items: center !important;
+}
+
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) #desk-print-notes-btn {
+  align-self: center !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
 /* Project and Chapter share the same quiet rounded treatment. */
 #second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:nth-child(2),
 #second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child > .relative > div {
   border-radius: 0.65rem !important;
+}
+
+/* Focus Mode sits on the same Y-axis as Quiet Drafting Desk. */
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child {
+  align-items: center !important;
+}
+
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) #desk-focus-mode-btn {
+  align-self: center !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
 }
 
 @media (max-width: 900px) {
