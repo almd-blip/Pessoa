@@ -148,6 +148,13 @@ export default function LocalAIRuntimeManager({
 
   return (
     <div className="space-y-4 font-sans text-left" id="local-ai-runtime-manager">
+      <div className="space-y-1 text-left">
+        <p className="text-base font-semibold text-[#1B0A3B] dark:text-stone-100">Choose how Pessoa connects to offline AI.</p>
+        <p className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed">
+          The options below are suggestions to help you get started. Other compatible models and AI services may also be available.
+        </p>
+      </div>
+
       <div className="space-y-3">
         <SectionHeader title="Beginner — Zero setup" description="Use AI directly in your browser. Nothing to install. Your model downloads once and can then work offline on this device." open={openSection === 'beginner'} onToggle={() => toggleSection('beginner')} />
         {openSection === 'beginner' && (
