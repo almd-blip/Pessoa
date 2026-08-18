@@ -1,0 +1,14 @@
+/* Align the drafting context with the desk title. */
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:nth-child(2),
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child > .relative {
+  margin-left: 0 !important;
+  justify-self: start !important;
+}
+
+#quiet-drafting-desk > div:has(button[aria-label="Dismiss Pause Reminder"]) {
+  margin-left: 0 !important;
+}
+
+#quiet-drafting-desk .relative.p-4.sm\:p-6.md\:p-8 {
+  text-align: left;
+}
