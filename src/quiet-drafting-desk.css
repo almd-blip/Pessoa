@@ -199,48 +199,201 @@
   box-shadow: none !important;
 }
 
+/* ---------------------------------------------------------------
+   Final header hierarchy
+   Title on line one; working context on line two. Focus Mode stays
+   with the title, while Print Notes stays with project/chapter context.
+   Existing controls and handlers remain untouched.
+   --------------------------------------------------------------- */
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "title focus"
+    "context print";
+  align-items: center;
+  column-gap: 1.25rem;
+  row-gap: 0.7rem;
+}
+
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child {
+  display: contents;
+}
+
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:first-child {
+  grid-area: title;
+  display: block;
+  min-width: 0;
+}
+
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:nth-child(2) {
+  grid-area: context;
+  justify-self: start;
+  min-width: 0;
+  max-width: 100%;
+}
+
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child {
+  display: contents;
+}
+
+/* Chapter selector becomes part of the quiet second line. */
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child > .relative {
+  grid-area: context;
+  justify-self: start;
+  margin-left: min(22rem, 38vw);
+}
+
+/* Keep the project and chapter on one working-context line where space allows. */
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:nth-child(2),
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child > .relative > div {
+  font-size: 0.95rem;
+}
+
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:nth-child(2) select,
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child > .relative button {
+  font-size: 0.95rem !important;
+  line-height: 1.4;
+}
+
+/* The persistent + Add chapter affordance belongs inside the chapter menu. */
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child > .relative > div > button:last-child {
+  display: none !important;
+}
+
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) #desk-print-notes-btn {
+  grid-area: print;
+  justify-self: end;
+  align-self: center;
+  border: 0 !important;
+  padding: 0.35rem 0.2rem !important;
+  font-size: 0.95rem;
+  min-height: 0;
+}
+
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) #desk-focus-mode-btn {
+  grid-area: focus;
+  justify-self: end;
+  align-self: center;
+  border: 0 !important;
+  padding: 0.35rem 0.2rem !important;
+  font-size: 0.95rem;
+  min-height: 0;
+}
+
+/* Project selector remains rounded and quiet, but now reads as a working label. */
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:nth-child(2) {
+  border-radius: 999px;
+  border-color: rgba(145, 42, 74, 0.14);
+  padding: 0.18rem 0.7rem;
+  background: rgba(255, 255, 255, 0.36);
+}
+
+/* Empty state: keep the existing creation flow functional while presenting a
+   quiet one-line invitation before the form. */
+#second-thought-writing-studio > section:first-child {
+  border: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  padding: 0.25rem 0 !important;
+}
+
+@media (max-width: 900px) {
+  #second-thought-writing-studio > div:has(#desk-print-notes-btn) {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "title focus"
+      "context context"
+      "print print";
+    row-gap: 0.55rem;
+  }
+
+  #second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child > .relative {
+    margin-left: 0;
+  }
+
+  #second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:nth-child(2),
+  #second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child > .relative {
+    justify-self: start;
+  }
+
+  #second-thought-writing-studio > div:has(#desk-print-notes-btn) #desk-print-notes-btn {
+    justify-self: start;
+  }
+}
+
 @media (max-width: 767px) {
   #second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child,
   #second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child {
-    width: 100%;
+    width: auto;
   }
 
-  #second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child {
-    align-items: stretch;
-  }
-
-  #second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child > div:first-child {
-    flex: 1 1 100%;
-  }
-
-  #second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child > div:last-child {
-    width: 100%;
+  #second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child > .relative > div {
+    min-height: 0;
   }
 
   #second-thought-writing-studio > div:has(#desk-print-notes-btn) #desk-print-notes-btn,
   #second-thought-writing-studio > div:has(#desk-print-notes-btn) #desk-focus-mode-btn {
-    flex: 1;
-    justify-content: center;
+    flex: none;
+    justify-content: initial;
   }
 
   #second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:nth-child(2) {
-    padding: 0.15rem 0.45rem;
+    max-width: calc(100vw - 2rem);
   }
 
-  #quiet-drafting-desk textarea {
-    max-width: none;
+  #second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child > .relative {
+    max-width: calc(100vw - 2rem);
   }
 
-  #quiet-drafting-desk .absolute.-right-6 {
-    position: static;
-    flex-direction: row;
-    overflow-x: auto;
-    margin-top: 0.75rem;
+  #second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:nth-child(2) select,
+  #second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child > .relative button {
+    font-size: 0.9rem !important;
+  }
+
+  #second-thought-writing-studio > div:has(#desk-print-notes-btn) #desk-focus-mode-btn {
+    font-size: 0.9rem;
   }
 }
 
-.dark #second-thought-writing-studio > div:has(#desk-print-notes-btn) h2 + span {
-  color: #c8c2c8 !important;
+/* Focus mode: quiet title + explicit exit action, with no project/chapter
+   context competing with the writing. */
+#focus-mode-interface header .max-w-4xl > button#exit-focus-mode-btn {
+  order: 2;
+  background: transparent !important;
+  color: #912A4A !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 0.35rem 0.2rem !important;
+  font-size: 0.95rem !important;
+}
+
+#focus-mode-interface header .max-w-4xl > button#exit-focus-mode-btn span {
+  font-size: 0;
+}
+
+#focus-mode-interface header .max-w-4xl > button#exit-focus-mode-btn span::after {
+  content: 'Exit Focus Mode';
+  font-size: 0.95rem;
+}
+
+#focus-mode-interface header .max-w-4xl > div:nth-child(2) {
+  order: 1;
+  margin-right: auto;
+}
+
+#focus-mode-interface header .max-w-4xl > div:nth-child(2) > span:first-child {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+#focus-mode-interface header .max-w-4xl > div:nth-child(2) > span:nth-child(2),
+#focus-mode-interface header .max-w-4xl > div:nth-child(2) > span:nth-child(3) {
+  display: none !important;
+}
+
+#focus-mode-interface header .max-w-4xl > div:nth-child(3) {
+  display: none !important;
 }
 
 .dark #second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:nth-child(2) {
@@ -252,27 +405,6 @@
   color: #d7d0d7 !important;
 }
 
-.dark #second-thought-writing-studio > div:has(#desk-print-notes-btn) select {
-  background: rgba(27, 10, 59, 0.48) !important;
-  color: #ffffff !important;
-  border-color: rgba(255, 255, 255, 0.14) !important;
-}
-
-.dark #second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:nth-child(2) select {
-  background: transparent !important;
-  border-color: transparent !important;
-  color: #d7d0d7 !important;
-}
-
-.dark #quiet-drafting-desk > div:has(button[aria-label="Dismiss Pause Reminder"]) {
-  background: rgba(29, 158, 117, 0.09) !important;
-}
-
-.dark #quiet-drafting-desk > div:has(button[aria-label="Dismiss Pause Reminder"]) > div span:last-child {
-  color: #ffffff !important;
-}
-
-.dark #quiet-drafting-desk .relative.p-4.sm\:p-6.md\:p-8 {
-  background: rgba(27, 10, 59, 0.55) !important;
-  border-color: rgba(255, 255, 255, 0.1) !important;
+.dark #focus-mode-interface header .max-w-4xl > button#exit-focus-mode-btn {
+  color: #e8a5b8 !important;
 }
