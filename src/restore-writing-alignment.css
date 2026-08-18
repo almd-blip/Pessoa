@@ -1,0 +1,6 @@
+/* Restore the writing prompt/content to its original left-aligned position. */
+#quiet-drafting-desk textarea {
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
