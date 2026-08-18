@@ -30,6 +30,42 @@
   font-weight: 600;
 }
 
+/* Quiet hierarchy: the title stands alone; Draft Editor is unnecessary. */
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:first-child > span {
+  display: none !important;
+}
+
+/* Project selector: same quiet scale as Chapter, with a soft rounded outline. */
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:nth-child(2) {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.55rem;
+  border: 1px solid rgba(145, 42, 74, 0.14);
+  border-radius: 0.65rem;
+  background: rgba(255, 255, 255, 0.42);
+  box-shadow: none;
+}
+
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:nth-child(2) select {
+  min-height: 1.75rem;
+  padding: 0.2rem 1.35rem 0.2rem 0.15rem !important;
+  border: 0 !important;
+  border-radius: 0.5rem;
+  background: transparent !important;
+  color: #575057 !important;
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  box-shadow: none !important;
+}
+
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:nth-child(2) select:hover,
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:nth-child(2) select:focus {
+  color: #912A4A !important;
+  outline: none;
+}
+
 #second-thought-writing-studio > div:has(#desk-print-notes-btn) h2 + span {
   background: transparent !important;
   border: 0 !important;
@@ -47,6 +83,20 @@
   border-radius: 0.65rem;
   background: rgba(255, 255, 255, 0.72) !important;
   color: #1B0A3B !important;
+  box-shadow: none !important;
+}
+
+/* Restore the deliberately quiet project selector styling above after the
+   generic header select rule. */
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:nth-child(2) select {
+  min-height: 1.75rem;
+  padding: 0.2rem 1.35rem 0.2rem 0.15rem !important;
+  border: 0 !important;
+  border-radius: 0.5rem;
+  background: transparent !important;
+  color: #575057 !important;
+  font-size: 0.75rem;
+  font-weight: 600;
   box-shadow: none !important;
 }
 
@@ -173,6 +223,10 @@
     justify-content: center;
   }
 
+  #second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:nth-child(2) {
+    padding: 0.15rem 0.45rem;
+  }
+
   #quiet-drafting-desk textarea {
     max-width: none;
   }
@@ -189,10 +243,25 @@
   color: #c8c2c8 !important;
 }
 
+.dark #second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:nth-child(2) {
+  background: rgba(27, 10, 59, 0.24);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.dark #second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:nth-child(2) select {
+  color: #d7d0d7 !important;
+}
+
 .dark #second-thought-writing-studio > div:has(#desk-print-notes-btn) select {
   background: rgba(27, 10, 59, 0.48) !important;
   color: #ffffff !important;
   border-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+.dark #second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:nth-child(2) select {
+  background: transparent !important;
+  border-color: transparent !important;
+  color: #d7d0d7 !important;
 }
 
 .dark #quiet-drafting-desk > div:has(button[aria-label="Dismiss Pause Reminder"]) {
