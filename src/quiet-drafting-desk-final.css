@@ -1,49 +1,127 @@
-/* Final Quiet Drafting Desk alignment refinement */
+/* Quiet Drafting Desk — exact requested header layout.
+   Do not reinterpret this layout in component markup. */
 
-/* Project starts on the same x-coordinate as the page title/content column. */
-#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:nth-child(2) {
-  justify-self: start !important;
-  margin-left: 0 !important;
-  border-radius: 0.65rem !important;
-  border-color: rgba(145, 42, 74, 0.14) !important;
-}
-
-/* Remove the spacing that previously pushed Chapter away from the title axis. */
-#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child > .relative {
-  margin-left: 0 !important;
-}
-
-/* Project, Chapter and Print Notes share one baseline and quiet visual weight. */
-#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child {
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  grid-template-areas:
+    "title title focus"
+    "project chapter notes";
   align-items: center !important;
+  column-gap: 1.25rem;
+  row-gap: 0.65rem;
 }
 
-#second-thought-writing-studio > div:has(#desk-print-notes-btn) #desk-print-notes-btn {
+/* Make the two existing header wrapper elements transparent to the grid so
+   their existing controls can occupy the exact requested positions. */
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child,
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child {
+  display: contents !important;
+}
+
+/* Row 1: Quiet Drafting Desk + Focus Mode, same Y position. */
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:first-child {
+  grid-area: title;
   align-self: center !important;
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
-}
-
-/* Project and Chapter share the same quiet rounded treatment. */
-#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:nth-child(2),
-#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child > .relative > div {
-  border-radius: 0.65rem !important;
-}
-
-/* Focus Mode sits on the same Y-axis as Quiet Drafting Desk. */
-#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child {
-  align-items: center !important;
+  min-width: 0;
 }
 
 #second-thought-writing-studio > div:has(#desk-print-notes-btn) #desk-focus-mode-btn {
+  grid-area: focus;
   align-self: center !important;
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
+  justify-self: end !important;
+  margin: 0 !important;
+}
+
+/* Row 2: Project + Chapter + Print Notes, same Y position. */
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:nth-child(2) {
+  grid-area: project;
+  align-self: center !important;
+  justify-self: start !important;
+  margin: 0 !important;
+  min-width: 0;
+  border-radius: 0.65rem !important;
+  border: 1px solid rgba(145, 42, 74, 0.10) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:nth-child(2) select {
+  font-size: 0.95rem !important;
+  line-height: 1.4 !important;
+  border: 0 !important;
+  border-radius: 0.65rem !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #575057 !important;
+}
+
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child > .relative {
+  grid-area: chapter;
+  align-self: center !important;
+  justify-self: start !important;
+  margin: 0 !important;
+  min-width: 0;
+}
+
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child > .relative > div {
+  border-radius: 0.65rem !important;
+  border-color: rgba(145, 42, 74, 0.10) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child > .relative button {
+  font-size: 0.95rem !important;
+  line-height: 1.4 !important;
+}
+
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) #desk-print-notes-btn {
+  grid-area: notes;
+  align-self: center !important;
+  justify-self: end !important;
+  margin: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 0.35rem 0.2rem !important;
+  font-size: 0.95rem !important;
+}
+
+/* The visible Draft Editor label is not part of the requested hierarchy. */
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:first-child > span {
+  display: none !important;
 }
 
 @media (max-width: 900px) {
+  #second-thought-writing-studio > div:has(#desk-print-notes-btn) {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "title focus"
+      "project project"
+      "chapter notes";
+  }
+
   #second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:nth-child(2),
   #second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child > .relative {
-    margin-left: 0 !important;
+    justify-self: start !important;
+    margin: 0 !important;
+  }
+
+  #second-thought-writing-studio > div:has(#desk-print-notes-btn) #desk-print-notes-btn {
+    justify-self: end !important;
+  }
+}
+
+@media (max-width: 767px) {
+  #second-thought-writing-studio > div:has(#desk-print-notes-btn) {
+    column-gap: 0.75rem;
+  }
+
+  #second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:nth-child(2) select,
+  #second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child > .relative button,
+  #second-thought-writing-studio > div:has(#desk-print-notes-btn) #desk-print-notes-btn,
+  #second-thought-writing-studio > div:has(#desk-print-notes-btn) #desk-focus-mode-btn {
+    font-size: 0.9rem !important;
   }
 }
