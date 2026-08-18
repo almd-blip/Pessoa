@@ -1,5 +1,5 @@
-/* Exact Quiet Drafting Desk layout requested.
-   This is intentionally layout-only: no copy, controls, or behaviour are changed. */
+/* Quiet Drafting Desk — authoritative layout
+   Exact two-row structure requested. No copy, control, or behaviour changes. */
 
 #second-thought-writing-studio > div:has(#desk-print-notes-btn) {
   display: grid !important;
@@ -36,6 +36,7 @@
   justify-self: start !important;
   align-self: center !important;
   margin: 0 !important;
+  padding-left: 0 !important;
 }
 
 #second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child > .relative {
@@ -50,11 +51,6 @@
   justify-self: end !important;
   align-self: center !important;
   margin: 0 !important;
-}
-
-/* Project begins on exactly the same X-axis as the page title. */
-#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:nth-child(2) {
-  padding-left: 0 !important;
 }
 
 /* Project and Chapter outlines: identical, quiet, almost invisible. */
@@ -72,30 +68,43 @@
   box-shadow: none !important;
 }
 
-/* The Pause prompt shares the exact left X-axis of the desk title/project. */
+/* The project/context content and Pause prompt share the desk title's left axis. */
 #quiet-drafting-desk > div:has(button[aria-label="Dismiss Pause Reminder"]) {
   margin-left: 0 !important;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 #quiet-drafting-desk > div:has(button[aria-label="Dismiss Pause Reminder"]) > div {
   margin-left: 0 !important;
 }
 
-#quiet-drafting-desk > div:has(button[aria-label="Dismiss Pause Reminder"]) {
-  width: 100%;
-  box-sizing: border-box;
-}
-
+/* Keep the same two-row hierarchy on tablet and mobile. Content may wrap
+   naturally inside its own grid area; the row structure itself does not change. */
 @media (max-width: 900px) {
   #second-thought-writing-studio > div:has(#desk-print-notes-btn) {
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) auto auto;
     grid-template-areas:
-      "title focus"
-      "project project"
-      "chapter print";
+      "title spacer focus"
+      "project chapter print";
+    column-gap: 0.65rem;
+    row-gap: 0.6rem;
   }
 
-  #second-thought-writing-studio > div:has(#desk-print-notes-btn) #desk-print-notes-btn {
+  #second-thought-writing-studio > div:has(#desk-print-notes-btn) #desk-focus-mode-btn {
     justify-self: end !important;
+  }
+
+  #second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:nth-child(2),
+  #second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child > .relative,
+  #second-thought-writing-studio > div:has(#desk-print-notes-btn) #desk-print-notes-btn {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  #second-thought-writing-studio > div:has(#desk-print-notes-btn) {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+    column-gap: 0.4rem;
   }
 }
