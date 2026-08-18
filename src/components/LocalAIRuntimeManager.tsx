@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   LocalAIConfig,
   LocalAIProvider,
@@ -17,27 +17,58 @@ import {
 } from '../lib/localAiService';
 import { WEBL_MODELS, checkWebGPUSupport } from '../lib/webLlmService';
 import {
-  Cpu,
-  Server,
-  Cloud,
-  CheckCircle2,
   AlertCircle,
-  RefreshCw,
-  Zap,
-  HardDrive,
-  Shield,
-  HelpCircle,
+  CheckCircle2,
   ChevronDown,
   ChevronUp,
-  Sparkles,
+  HardDrive,
   Info,
-  ExternalLink,
-  Laptop
+  RefreshCw,
+  Server,
+  Shield,
+  Sparkles,
+  Zap,
+  Cloud,
 } from 'lucide-react';
 
 interface LocalAIRuntimeManagerProps {
   onConfigSaved?: (config: LocalAIConfig) => void;
   compact?: boolean;
+}
+
+const intermediateProviders: LocalAIProvider[] = ['ollama', 'lmstudio', 'gpt4all', 'anythingllm'];
+
+function SectionHeader({
+  title,
+  description,
+  open,
+  onToggle,
+}: {
+  title: string;
+  description: string;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-expanded={open}
+      className="w-full min-h-11 text-left flex items-center justify-between gap-4 py-3.5 px-4 sm:px-5 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 hover:bg-stone-50 dark:hover:bg-stone-900 transition-colors"
+    >
+      <span className="min-w-0">
+        <span className="block text-base font-semibold text-[#1B0A3B] dark:text-stone-100 leading-snug">
+          {title}
+        </span>
+        <span className="block mt-1 text-sm text-stone-600 dark:text-stone-400 leading-relaxed">
+          {description}
+        </span>
+      </span>
+      <span className="shrink-0 text-[#1D9E75]" aria-hidden="true">
+        {open ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+      </span>
+    </button>
+  );
 }
 
 export default function LocalAIRuntimeManager({
@@ -51,14 +82,14 @@ export default function LocalAIRuntimeManager({
   });
   const [isTesting, setIsTesting] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
-  const [showGuideFor, setShowGuideFor] = useState<LocalAIProvider | null>('webllm');
   const [webGpuStatus, setWebGpuStatus] = useState<{ supported: boolean; adapterName?: string; reason?: string } | null>(null);
+  const [openSection, setOpenSection] = useState<'beginner' | 'intermediate' | 'advanced' | 'guidance'>('beginner');
+  const [showGuideFor, setShowGuideFor] = useState<LocalAIProvider | null>(null);
 
   useEffect(() => {
     checkWebGPUSupport().then(setWebGpuStatus);
   }, []);
 
-  // Auto-run health check on load or provider change
   useEffect(() => {
     runHealthCheck(config);
   }, [config.provider, config.baseUrl]);
@@ -104,569 +135,408 @@ export default function LocalAIRuntimeManager({
 
   const selectedMeta = PROVIDER_INSTRUCTIONS[config.provider] || PROVIDER_INSTRUCTIONS.webllm;
 
+  const toggleSection = (section: 'beginner' | 'intermediate' | 'advanced' | 'guidance') => {
+    setOpenSection((current) => (current === section ? section : section));
+  };
+
+  const openProviderGuide = (provider: LocalAIProvider) => {
+    handleProviderSelect(provider);
+    setShowGuideFor(provider);
+  };
+
   return (
-    <div className="space-y-6 font-sans text-left" id="local-ai-runtime-manager">
-      {/* Infrastructure Mode Banner */}
-      <div className="bg-stone-50 dark:bg-stone-900/60 border border-stone-200/80 dark:border-stone-800 rounded-xl p-4 sm:p-5 space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-[#912A4A]/10 text-[#912A4A] dark:bg-rose-950/40 dark:text-rose-400">
-              <Cpu className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-stone-900 dark:text-stone-100 text-sm flex items-center gap-2">
-                <span>AI Engine & Local Offline Runtime</span>
-                <span className="text-[10px] bg-[#912A4A]/10 text-[#912A4A] dark:bg-rose-950/60 dark:text-rose-300 px-2 py-0.5 rounded font-mono font-bold uppercase">
-                  Zero Telemetry Option
-                </span>
-              </h3>
-              <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
-                Run AI right in your browser, on your computer, or in the cloud. You can hook up different models and switch between them anytime with one click.
-              </p>
-            </div>
-          </div>
-
-          {/* Quick Engine Switcher */}
-          <div className="flex items-center bg-white dark:bg-stone-950 p-1 rounded-xl border border-stone-200 dark:border-stone-800 text-xs font-medium">
-            <button
-              type="button"
-              onClick={() => handleProviderSelect('webllm')}
-              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
-                config.provider === 'webllm'
-                  ? 'bg-[#912A4A] text-white font-bold shadow-xs'
-                  : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white'
-              }`}
-            >
-              <Zap className="w-3.5 h-3.5" />
-              <span>In-Browser WebGPU</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleProviderSelect('ollama')}
-              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
-                config.provider !== 'gemini' && config.provider !== 'webllm'
-                  ? 'bg-[#912A4A] text-white font-bold shadow-xs'
-                  : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white'
-              }`}
-            >
-              <Server className="w-3.5 h-3.5" />
-              <span>Desktop App / Daemon</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleProviderSelect('gemini')}
-              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
-                config.provider === 'gemini'
-                  ? 'bg-[#912A4A] text-white font-bold shadow-xs'
-                  : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white'
-              }`}
-            >
-              <Cloud className="w-3.5 h-3.5" />
-              <span>Gemini Cloud</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Dynamic Capability & Privacy Card */}
-        <div className="p-3.5 bg-amber-50/40 dark:bg-stone-900/40 border border-stone-200/70 dark:border-stone-800 rounded-lg text-xs text-stone-700 dark:text-stone-300 leading-relaxed flex items-start gap-2.5">
-          <Shield className="w-4 h-4 text-[#912A4A] dark:text-rose-400 shrink-0 mt-0.5" />
-          <div className="space-y-1">
-            <strong className="text-stone-900 dark:text-stone-100 font-semibold block">
-              100% Client-Side Privacy Guarantee:
-            </strong>
-            <span>
-              All literature notes, synthesis drafts, and claim verifications remain strictly in your browser or local machine.
-              {config.provider === 'webllm' && ' In WebGPU mode, neural weights run directly on your graphics card and are cached in IndexedDB.'}
-            </span>
-          </div>
-        </div>
-
-        {/* Which Model Should You Use? Context & Hardware Decision Guide */}
-        <div className="p-3.5 bg-stone-100/70 dark:bg-stone-950/80 border border-stone-200 dark:border-stone-800 rounded-lg text-xs space-y-2.5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-stone-900 dark:text-stone-100 font-bold">
-              <Sparkles className="w-3.5 h-3.5 text-[#912A4A] dark:text-rose-400" />
-              <span>Which Model Should You Choose for Your Device?</span>
-            </div>
-            <span className="text-[10px] text-stone-500 font-medium">Plain-language guide</span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 text-[11px] text-stone-600 dark:text-stone-400 pt-0.5">
-            {/* 1. Light Tier */}
-            <div className="p-3 rounded-md bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 space-y-1.5 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between">
-                  <strong className="text-stone-900 dark:text-stone-200 font-semibold block text-xs">
-                    📱 1. Light & Fast (1.7B – 3B)
-                  </strong>
-                  <span className="text-[9px] bg-stone-100 dark:bg-stone-800 px-1.5 py-0.5 rounded text-stone-600 dark:text-stone-400 font-mono">2-4GB RAM</span>
-                </div>
-                <p className="leading-snug text-stone-500 dark:text-stone-400 mt-1">
-                  <strong>Best for:</strong> Phones, tablets, and older laptops.
-                </p>
-                <p className="leading-snug text-stone-600 dark:text-stone-300 mt-1">
-                  <span className="text-[#912A4A] dark:text-rose-400 font-medium">Qwen 2.5 (3B)</span> runs right inside your web browser. Zero setup, fast, and won't slow down your device.
-                </p>
-              </div>
-              <div className="text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold pt-1 border-t border-stone-100 dark:border-stone-850">
-                ✓ Zero install & instant launch
-              </div>
-            </div>
-
-            {/* 2. In-Between Sweet Spot */}
-            <div className="p-3 rounded-md bg-white dark:bg-stone-900 border-2 border-[#912A4A]/40 dark:border-rose-400/40 space-y-1.5 flex flex-col justify-between relative shadow-xs">
-              <div className="absolute -top-2 right-2 px-1.5 py-0.5 bg-[#912A4A] text-white text-[9px] font-bold rounded">
-                ⭐️ The "In-Between" Sweet Spot
-              </div>
-              <div>
-                <div className="flex items-center justify-between">
-                  <strong className="text-stone-900 dark:text-stone-100 font-bold block text-xs">
-                    💻 2. The Sweet Spot (7B – 8B)
-                  </strong>
-                  <span className="text-[9px] bg-rose-100/80 dark:bg-rose-950/80 text-[#912A4A] dark:text-rose-300 px-1.5 py-0.5 rounded font-mono font-bold">8GB RAM</span>
-                </div>
-                <p className="leading-snug text-stone-500 dark:text-stone-400 mt-1">
-                  <strong>Best for:</strong> Standard everyday laptops & desktops.
-                </p>
-                <p className="leading-snug text-stone-600 dark:text-stone-300 mt-1">
-                  <span className="text-[#912A4A] dark:text-rose-400 font-medium">Qwen 2.5 (7B)</span> or <span className="font-medium">Qwen 3 (8B)</span>. Noticeably smarter at finding mistakes and writing without needing a heavy gaming computer.
-                </p>
-              </div>
-              <div className="text-[10px] text-[#912A4A] dark:text-rose-400 font-semibold pt-1 border-t border-stone-100 dark:border-stone-850">
-                ✓ Best balance of smarts & speed
-              </div>
-            </div>
-
-            {/* 3. Heavyweight Powerhouse */}
-            <div className="p-3 rounded-md bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 space-y-1.5 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between">
-                  <strong className="text-stone-900 dark:text-stone-200 font-semibold block text-xs">
-                    🖥️ 3. Heavyweight (14B – 20B)
-                  </strong>
-                  <span className="text-[9px] bg-stone-100 dark:bg-stone-800 px-1.5 py-0.5 rounded text-stone-600 dark:text-stone-400 font-mono">16GB+ RAM</span>
-                </div>
-                <p className="leading-snug text-stone-500 dark:text-stone-400 mt-1">
-                  <strong>Best for:</strong> Powerful gaming PCs & workstations.
-                </p>
-                <p className="leading-snug text-stone-600 dark:text-stone-300 mt-1">
-                  <span className="text-[#912A4A] dark:text-rose-400 font-medium">gpt-oss (20B)</span> or <span className="font-medium">DeepSeek R1</span>. The "big brain" option for solving difficult, multi-layered research questions.
-                </p>
-              </div>
-              <div className="text-[10px] text-stone-600 dark:text-stone-400 font-medium pt-1 border-t border-stone-100 dark:border-stone-850">
-                ✓ Deepest academic reasoning
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* PROVIDER CARDS SELECTION */}
+    <div className="space-y-4 font-sans text-left" id="local-ai-runtime-manager">
       <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <label className="font-sans text-xs text-stone-800 dark:text-stone-200 font-bold block">
-            Select Your Preferred AI Engine Provider:
-          </label>
-          <span className="text-[11px] text-stone-500">
-            Click any card to see setup steps and difficulty rating
-          </span>
-        </div>
+        <SectionHeader
+          title="Beginner — Zero setup"
+          description="Use AI directly in your browser. Nothing to install. Your model downloads once and can then work offline on this device."
+          open={openSection === 'beginner'}
+          onToggle={() => toggleSection('beginner')}
+        />
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {/* WebLLM In-Browser (Featured Zero-Install) */}
-          <button
-            type="button"
-            onClick={() => handleProviderSelect('webllm')}
-            className={`p-3.5 rounded-xl border text-left cursor-pointer transition-all flex flex-col justify-between h-full space-y-3 relative overflow-hidden ${
-              config.provider === 'webllm'
-                ? 'bg-rose-50/50 dark:bg-[#912A4A]/20 border-[#912A4A] dark:border-rose-400 ring-1 ring-[#912A4A] shadow-xs'
-                : 'bg-white dark:bg-stone-950 border-stone-200 dark:border-stone-800 hover:border-stone-300 dark:hover:border-stone-700'
-            }`}
-          >
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-stone-900 dark:text-stone-100 flex items-center gap-1.5">
-                  <Zap className="w-3.5 h-3.5 text-[#912A4A] dark:text-rose-400" />
-                  <span>In-Browser WebGPU</span>
-                </span>
-                <span className="text-[10px] bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 font-semibold px-2 py-0.5 rounded-full">
-                  Zero Install
-                </span>
+        {openSection === 'beginner' && (
+          <div className="space-y-4 pl-0 sm:pl-2">
+            <div className="rounded-xl border border-stone-200/80 dark:border-stone-800 bg-white dark:bg-stone-950 p-4 sm:p-5 space-y-4">
+              <div className="flex items-start gap-3">
+                <Zap className="w-5 h-5 text-[#1D9E75] shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="text-sm font-semibold text-[#1B0A3B] dark:text-stone-100">In-browser AI</h3>
+                  <p className="mt-1 text-sm text-stone-600 dark:text-stone-400 leading-relaxed">
+                    Pessoa can run a model in your browser using your device's graphics processor. The model is cached on this device for later offline use.
+                  </p>
+                </div>
               </div>
-              <p className="text-[11px] text-stone-500 dark:text-stone-400 leading-snug">
-                Runs directly in browser GPU memory. No terminal, background servers, or installations required.
-              </p>
-            </div>
-
-            <div className="pt-2 border-t border-stone-150 dark:border-stone-850 flex items-center justify-between text-[10px]">
-              <span className="text-stone-400">Knowledge: <strong className="text-emerald-700 dark:text-emerald-400">Beginner (Zero)</strong></span>
-              <span className="text-stone-400">Effort: <strong className="text-emerald-700 dark:text-emerald-400">Zero (1-Click)</strong></span>
-            </div>
-          </button>
-
-          {/* Desktop Daemons & Custom */}
-          {(Object.keys(PROVIDER_PRESETS) as Array<keyof typeof PROVIDER_PRESETS>)
-            .filter((p) => p !== 'webllm')
-            .map((provKey) => {
-              const preset = PROVIDER_PRESETS[provKey];
-              const meta = PROVIDER_INSTRUCTIONS[provKey];
-              const isSelected = config.provider === provKey;
-
-              return (
-                <button
-                  key={provKey}
-                  type="button"
-                  onClick={() => handleProviderSelect(provKey)}
-                  className={`p-3.5 rounded-xl border text-left cursor-pointer transition-all flex flex-col justify-between h-full space-y-3 ${
-                    isSelected
-                      ? 'bg-rose-50/50 dark:bg-[#912A4A]/20 border-[#912A4A] dark:border-rose-400 ring-1 ring-[#912A4A] shadow-xs'
-                      : 'bg-white dark:bg-stone-950 border-stone-200 dark:border-stone-800 hover:border-stone-300 dark:hover:border-stone-700'
-                  }`}
-                >
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className={`text-xs font-bold ${isSelected ? 'text-[#912A4A] dark:text-rose-300' : 'text-stone-800 dark:text-stone-200'}`}>
-                        {preset.name}
-                      </span>
-                      {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-[#1D9E75] dark:text-[#28c093]" />}
-                    </div>
-                    <p className="text-[11px] text-stone-500 dark:text-stone-400 leading-snug">
-                      {preset.description}
-                    </p>
-                  </div>
-
-                  <div className="pt-2 border-t border-stone-150 dark:border-stone-850 flex items-center justify-between text-[10px]">
-                    <span className="text-stone-400">Knowledge: <strong className="text-stone-700 dark:text-stone-300">{meta?.knowledgeLevel.split(' ')[0] || 'Beginner'}</strong></span>
-                    <span className="text-stone-400">Effort: <strong className="text-stone-700 dark:text-stone-300">{meta?.effortLevel || 'Low'}</strong></span>
-                  </div>
-                </button>
-              );
-            })}
-        </div>
-      </div>
-
-      {/* SETUP GUIDE & EFFORT ACCORDION FOR SELECTED PROVIDER */}
-      <div className="bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl p-4 sm:p-5 space-y-3">
-        <div className="flex items-center justify-between border-b border-stone-150 dark:border-stone-850 pb-3">
-          <div className="flex items-center gap-2">
-            <Info className="w-4 h-4 text-[#912A4A] dark:text-rose-400" />
-            <h4 className="font-sans font-bold text-xs text-stone-900 dark:text-stone-100">
-              Setup Instructions & Effort Guide: {selectedMeta.name}
-            </h4>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-sans px-2.5 py-0.5 rounded-full bg-stone-100 dark:bg-stone-850 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-700">
-              Knowledge: <strong>{selectedMeta.knowledgeLevel}</strong>
-            </span>
-            <span className="text-[11px] font-sans px-2.5 py-0.5 rounded-full bg-stone-100 dark:bg-stone-850 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-700">
-              Effort: <strong>{selectedMeta.effortLevel}</strong>
-            </span>
-          </div>
-        </div>
-
-        {/* Step-by-step guidance */}
-        <div className="space-y-2 pt-1 text-xs text-stone-600 dark:text-stone-300">
-          <ol className="space-y-1.5 list-decimal list-inside">
-            {selectedMeta.installationSteps.map((step, idx) => (
-              <li key={idx} className="leading-relaxed">
-                {step}
-              </li>
-            ))}
-          </ol>
-
-          <div className="pt-2 flex flex-wrap items-center gap-4 text-[11px] text-stone-500 border-t border-stone-100 dark:border-stone-900">
-            <div>
-              <strong>Prerequisite:</strong> {selectedMeta.prerequisites.join(', ')}
-            </div>
-            <div>
-              <strong>Privacy:</strong> {selectedMeta.offlineSecurity}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ACTIVE ENGINE CONFIGURATION FORM */}
-      <form onSubmit={handleSave} className="space-y-5">
-        {/* WEBGPU IN-BROWSER MODEL SELECTION */}
-        {config.provider === 'webllm' && (
-          <div className="bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl p-4 sm:p-5 space-y-4 shadow-2xs">
-            <div className="flex items-center justify-between border-b border-stone-150 dark:border-stone-850 pb-2.5">
-              <h4 className="font-sans font-semibold text-xs text-stone-900 dark:text-stone-100 flex items-center gap-1.5">
-                <Zap className="w-3.5 h-3.5 text-[#912A4A] dark:text-rose-400" />
-                <span>In-Browser Model Selection (WebGPU Accelerated)</span>
-              </h4>
 
               {webGpuStatus && (
-                <span className={`inline-flex items-center gap-1 text-[11px] font-mono px-2 py-0.5 rounded ${
-                  webGpuStatus.supported
-                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                    : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
-                }`}>
-                  {webGpuStatus.supported ? `WebGPU: ${webGpuStatus.adapterName || 'Ready'}` : 'WebGPU Unavailable'}
-                </span>
+                <div className={`text-sm rounded-lg px-3.5 py-3 border ${webGpuStatus.supported ? 'border-[#1D9E75]/30 bg-[#1D9E75]/5 text-stone-700 dark:text-stone-300' : 'border-amber-300/60 bg-amber-50/50 dark:bg-amber-950/20 text-stone-700 dark:text-stone-300'}`}>
+                  <strong>{webGpuStatus.supported ? 'Browser support: ready' : 'Browser support: not available'}</strong>
+                  {webGpuStatus.adapterName && ` — ${webGpuStatus.adapterName}`}
+                  {!webGpuStatus.supported && webGpuStatus.reason && <span> {webGpuStatus.reason}</span>}
+                </div>
               )}
+
+              <div>
+                <label className="block text-sm font-semibold text-[#1B0A3B] dark:text-stone-100 mb-2">Choose a model</label>
+                <div className="space-y-2">
+                  {WEBL_MODELS.map((model) => {
+                    const selected = config.provider === 'webllm' && config.model === model.id;
+                    return (
+                      <button
+                        key={model.id}
+                        type="button"
+                        onClick={() => {
+                          handleProviderSelect('webllm');
+                          handleModelSelect(model.id);
+                        }}
+                        className={`w-full min-h-11 text-left rounded-lg border px-3.5 py-3 transition-colors ${selected ? 'border-[#1D9E75] bg-[#1D9E75]/5' : 'border-stone-200 dark:border-stone-800 hover:bg-stone-50 dark:hover:bg-stone-900'}`}
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="text-sm font-semibold text-[#1B0A3B] dark:text-stone-100">{model.name}</span>
+                          <span className="text-xs text-stone-500">{model.size}</span>
+                        </div>
+                        <span className="block mt-1 text-sm text-stone-600 dark:text-stone-400 leading-relaxed">{model.description}</span>
+                        <span className="block mt-1 text-xs text-stone-500">{model.recommendedFor} · {model.memoryReq}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="border-t border-stone-200 dark:border-stone-800 pt-3 text-sm text-stone-600 dark:text-stone-400 leading-relaxed">
+                <strong className="text-[#1B0A3B] dark:text-stone-100">Privacy:</strong> when using WebGPU, processing happens in the browser and the model is cached locally.
+              </div>
             </div>
 
-            <p className="text-xs text-stone-500 dark:text-stone-400">
-              The model weights download automatically on first use and remain permanently cached in your browser's IndexedDB for complete offline capability.
-            </p>
+            <details className="rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50/60 dark:bg-stone-900/30">
+              <summary className="min-h-11 cursor-pointer px-4 py-3 text-sm font-semibold text-[#1B0A3B] dark:text-stone-100">Device and model guidance</summary>
+              <div className="px-4 pb-4 text-sm text-stone-600 dark:text-stone-400 leading-relaxed space-y-2">
+                <p><strong className="text-[#1B0A3B] dark:text-stone-100">Smaller models:</strong> better suited to phones, tablets and older computers.</p>
+                <p><strong className="text-[#1B0A3B] dark:text-stone-100">Medium models:</strong> a useful balance for many everyday laptops and desktops.</p>
+                <p><strong className="text-[#1B0A3B] dark:text-stone-100">Larger models:</strong> need more memory and a more powerful computer.</p>
+                <p className="text-xs">The existing model choices remain unchanged.</p>
+              </div>
+            </details>
+          </div>
+        )}
+      </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {WEBL_MODELS.map((m) => {
-                const isSelected = config.model === m.id;
+      <div className="space-y-3">
+        <SectionHeader
+          title="Intermediate — Basic setup"
+          description="Connect Pessoa to an AI app on your computer. Choose the app you already use, then use the saved connection details."
+          open={openSection === 'intermediate'}
+          onToggle={() => toggleSection('intermediate')}
+        />
 
+        {openSection === 'intermediate' && (
+          <div className="space-y-3 pl-0 sm:pl-2">
+            <div className="grid grid-cols-1 gap-2">
+              {intermediateProviders.map((provider) => {
+                const preset = PROVIDER_PRESETS[provider];
+                const selected = config.provider === provider;
                 return (
-                  <button
-                    key={m.id}
-                    type="button"
-                    onClick={() => handleModelSelect(m.id)}
-                    className={`p-3 rounded-lg border text-left transition-all cursor-pointer flex flex-col justify-between space-y-2 ${
-                      isSelected
-                        ? 'bg-rose-50/50 dark:bg-[#912A4A]/20 border-[#912A4A] dark:border-rose-400 ring-1 ring-[#912A4A]'
-                        : 'bg-stone-50/50 dark:bg-stone-900/30 border-stone-200 dark:border-stone-800 hover:bg-stone-100 dark:hover:bg-stone-800/50'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-sans text-xs font-semibold text-stone-900 dark:text-stone-100">
-                        {m.name}
+                  <div key={provider} className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => openProviderGuide(provider)}
+                      className="w-full min-h-11 text-left px-4 py-3.5 flex items-center justify-between gap-3 hover:bg-stone-50 dark:hover:bg-stone-900"
+                    >
+                      <span className="min-w-0">
+                        <span className={`block text-sm font-semibold ${selected ? 'text-[#1D9E75]' : 'text-[#1B0A3B] dark:text-stone-100'}`}>{preset.name}</span>
+                        <span className="block mt-1 text-sm text-stone-600 dark:text-stone-400 leading-relaxed">{preset.description}</span>
                       </span>
-                      <span className="font-mono text-[10px] bg-stone-200 dark:bg-stone-800 px-1.5 py-0.5 rounded text-stone-700 dark:text-stone-300">
-                        {m.size}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-stone-500 dark:text-stone-400 leading-snug">
-                      {m.description}
-                    </p>
-                    <div className="pt-1.5 border-t border-stone-200/60 dark:border-stone-800 flex items-center justify-between text-[10px] text-stone-400">
-                      <span>{m.recommendedFor}</span>
-                      <span className="font-mono text-stone-600 dark:text-stone-300">{m.memoryReq}</span>
-                    </div>
-                  </button>
+                      {showGuideFor === provider ? <ChevronUp className="w-5 h-5 shrink-0" /> : <ChevronDown className="w-5 h-5 shrink-0" />}
+                    </button>
+
+                    {showGuideFor === provider && (
+                      <ProviderSetup
+                        provider={provider}
+                        meta={PROVIDER_INSTRUCTIONS[provider]}
+                        config={config}
+                        health={health}
+                        isTesting={isTesting}
+                        onTest={() => runHealthCheck(config)}
+                        onModelSelect={handleModelSelect}
+                        onConfigChange={setConfig}
+                      />
+                    )}
+                  </div>
                 );
               })}
             </div>
           </div>
         )}
+      </div>
 
-        {/* DESKTOP DAEMON CONFIGURATION & DIAGNOSTICS */}
-        {config.provider !== 'gemini' && config.provider !== 'webllm' && (
-          <>
-            <div className="bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl p-4 sm:p-5 space-y-4 shadow-2xs">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-150 dark:border-stone-850 pb-2.5">
-                <h4 className="font-sans font-semibold text-xs text-stone-900 dark:text-stone-100 flex items-center gap-1.5">
-                  <Server className="w-3.5 h-3.5 text-[#912A4A] dark:text-rose-400" />
-                  <span>Desktop Server Connection Status</span>
-                </h4>
+      <div className="space-y-3">
+        <SectionHeader
+          title="Advanced — Cloud or private server setup"
+          description="Use your own private AI server or a cloud AI service. Choose this only if you already know how your server or API is set up."
+          open={openSection === 'advanced'}
+          onToggle={() => toggleSection('advanced')}
+        />
 
-                {/* Live Status Badge */}
-                <div className="flex items-center gap-2">
-                  {isTesting ? (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300">
-                      <RefreshCw className="w-3 h-3 animate-spin" />
-                      Testing connection...
-                    </span>
-                  ) : health.status === 'connected' ? (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-bold border border-emerald-200 dark:border-emerald-800">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                      Connected ({health.latencyMs}ms)
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono bg-red-100 dark:bg-red-950 text-red-800 dark:text-red-300 font-bold border border-red-200 dark:border-red-800">
-                      <AlertCircle className="w-3 h-3 text-red-600" />
-                      Local server offline
-                    </span>
-                  )}
-
+        {openSection === 'advanced' && (
+          <div className="space-y-3 pl-0 sm:pl-2">
+            {(['custom', 'gemini'] as LocalAIProvider[]).map((provider) => {
+              const meta = PROVIDER_INSTRUCTIONS[provider];
+              const selected = config.provider === provider;
+              const title = provider === 'custom' ? 'Custom OpenAI-compatible server' : 'Gemini Cloud API';
+              const description = provider === 'custom'
+                ? 'Connect to a private server such as vLLM, Text-Generation-WebUI or LocalAI, or another OpenAI-compatible endpoint.'
+                : 'Use Pessoa with the Gemini cloud service when you choose a cloud connection.';
+              return (
+                <div key={provider} className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 overflow-hidden">
                   <button
                     type="button"
-                    onClick={() => runHealthCheck(config)}
-                    className="px-2.5 py-1 text-[11px] font-sans font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 rounded border border-stone-200 dark:border-stone-800 transition-colors cursor-pointer"
+                    onClick={() => openProviderGuide(provider)}
+                    className="w-full min-h-11 text-left px-4 py-3.5 flex items-center justify-between gap-3 hover:bg-stone-50 dark:hover:bg-stone-900"
                   >
-                    Test connection again
+                    <span className="min-w-0">
+                      <span className={`block text-sm font-semibold ${selected ? 'text-[#1D9E75]' : 'text-[#1B0A3B] dark:text-stone-100'}`}>{title}</span>
+                      <span className="block mt-1 text-sm text-stone-600 dark:text-stone-400 leading-relaxed">{description}</span>
+                    </span>
+                    {showGuideFor === provider ? <ChevronUp className="w-5 h-5 shrink-0" /> : <ChevronDown className="w-5 h-5 shrink-0" />}
                   </button>
+
+                  {showGuideFor === provider && (
+                    <ProviderSetup
+                      provider={provider}
+                      meta={meta}
+                      config={config}
+                      health={health}
+                      isTesting={isTesting}
+                      onTest={() => runHealthCheck(config)}
+                      onModelSelect={handleModelSelect}
+                      onConfigChange={setConfig}
+                    />
+                  )}
                 </div>
-              </div>
-
-              {/* Inputs: Base URL & API Key */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                <div className="space-y-1">
-                  <label className="font-sans text-[10px] text-stone-600 dark:text-stone-400 font-bold block">
-                    Server URL
-                  </label>
-                  <input
-                    type="text"
-                    value={config.baseUrl}
-                    onChange={(e) => setConfig((prev) => ({ ...prev, baseUrl: e.target.value }))}
-                    placeholder="e.g. http://localhost:11434"
-                    className="w-full font-mono text-xs p-2 border border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-900 text-stone-900 dark:text-stone-100 rounded focus:outline-none focus:ring-2 focus:ring-[#912A4A]"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="font-sans text-[10px] text-stone-600 dark:text-stone-400 font-bold block">
-                    API key (optional)
-                  </label>
-                  <input
-                    type="password"
-                    value={config.apiKey || ''}
-                    onChange={(e) => setConfig((prev) => ({ ...prev, apiKey: e.target.value }))}
-                    placeholder="Leave blank if not required"
-                    className="w-full font-mono text-xs p-2 border border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-900 text-stone-900 dark:text-stone-100 rounded focus:outline-none focus:ring-2 focus:ring-[#912A4A]"
-                  />
-                </div>
-              </div>
-
-              {/* Diagnostic Message */}
-              {health.details && (
-                <p className="text-[11px] font-mono text-stone-500 dark:text-stone-400 bg-stone-50 dark:bg-stone-900/50 p-2.5 rounded border border-stone-150 dark:border-stone-850">
-                  {health.details}
-                </p>
-              )}
-
-              {/* Detected Local Models List */}
-              {health.detectedModels.length > 0 && (
-                <div className="space-y-1.5 pt-2 border-t border-stone-150 dark:border-stone-850">
-                  <span className="text-[10px] font-bold text-stone-600 dark:text-stone-400 block">
-                    Auto-detected models on your system ({health.detectedModels.length}):
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {health.detectedModels.map((m) => (
-                      <button
-                        key={m}
-                        type="button"
-                        onClick={() => handleModelSelect(m)}
-                        className={`text-[10px] font-mono px-2 py-0.5 rounded border transition-colors cursor-pointer ${
-                          config.model === m
-                            ? 'bg-[#912A4A] text-white border-[#912A4A] font-bold'
-                            : 'bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:border-stone-400'
-                        }`}
-                      >
-                        {m}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Open-Weight Models Catalog */}
-            <div className="bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl p-4 sm:p-5 space-y-3 shadow-2xs">
-              <h4 className="font-sans font-semibold text-xs text-stone-900 dark:text-stone-100 flex items-center gap-1.5 border-b border-stone-150 dark:border-stone-850 pb-2">
-                <HardDrive className="w-3.5 h-3.5 text-[#912A4A] dark:text-rose-400" />
-                <span>Open-Weight Model Library Presets</span>
-              </h4>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {OPEN_WEIGHT_MODELS.map((m) => {
-                  const isSelected = config.model === m.defaultOllamaName;
-
-                  return (
-                    <button
-                      key={m.id}
-                      type="button"
-                      onClick={() => handleModelSelect(m.defaultOllamaName)}
-                      className={`p-2.5 rounded-lg border text-left transition-all cursor-pointer flex flex-col justify-between ${
-                        isSelected
-                          ? 'bg-rose-50/50 dark:bg-[#912A4A]/20 border-[#912A4A] dark:border-rose-400'
-                          : 'bg-stone-50/50 dark:bg-stone-900/30 border-stone-200 dark:border-stone-800 hover:bg-stone-100 dark:hover:bg-stone-800/50'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-sans text-xs font-semibold text-stone-800 dark:text-stone-200">
-                          {m.name}
-                        </span>
-                        <span className="font-mono text-[9px] bg-stone-200 dark:bg-stone-800 px-1.5 py-0.5 rounded text-stone-600 dark:text-stone-300">
-                          {m.defaultOllamaName}
-                        </span>
-                      </div>
-                      <span className="text-[10px] text-stone-500 mt-1">{m.recommendedFor}</span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="pt-2 space-y-1">
-                <label className="font-sans text-[10px] text-stone-600 dark:text-stone-400 font-bold block">
-                  Active Model Identifier
-                </label>
-                <input
-                  type="text"
-                  value={config.model}
-                  onChange={(e) => setConfig((prev) => ({ ...prev, model: e.target.value }))}
-                  placeholder="e.g. llama3.2, qwen2.5, mistral"
-                  className="w-full font-mono text-xs p-2 border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 text-stone-900 dark:text-stone-100 rounded focus:outline-none focus:ring-2 focus:ring-[#912A4A]"
-                />
-              </div>
-            </div>
-          </>
+              );
+            })}
+          </div>
         )}
+      </div>
 
-        {/* PRIVACY & GOVERNANCE TOGGLES */}
-        {config.provider !== 'gemini' && (
-          <div className="bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl p-4 sm:p-5 space-y-3 text-xs shadow-2xs">
-            <h4 className="font-sans font-semibold text-xs text-stone-900 dark:text-stone-100 flex items-center gap-1.5 border-b border-stone-150 dark:border-stone-850 pb-2">
-              <Shield className="w-3.5 h-3.5 text-[#912A4A] dark:text-rose-400" />
-              <span>Offline Isolation & Cloud Safeguards</span>
-            </h4>
+      <div className="space-y-3">
+        <SectionHeader
+          title="Guidance & privacy"
+          description="Choose how Pessoa should support your work. These settings help it protect your voice, use citations carefully, and avoid pretending it knows something it cannot verify."
+          open={openSection === 'guidance'}
+          onToggle={() => toggleSection('guidance')}
+        />
 
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-stone-50 dark:bg-stone-900/40 rounded-lg border border-stone-200 dark:border-stone-800">
-                <div>
-                  <span className="font-semibold text-stone-800 dark:text-stone-200 block text-xs">
-                    Strict Offline Mode (Air-Gapped Privacy)
-                  </span>
-                  <span className="text-[11px] text-stone-500 block">
-                    Blocks all outbound web calls if local inference is unreachable.
-                  </span>
-                </div>
-                <input
-                  type="checkbox"
+        {openSection === 'guidance' && (
+          <div className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 p-4 sm:p-5 space-y-4">
+            <div className="flex items-start gap-3">
+              <Shield className="w-5 h-5 text-[#912A4A] shrink-0 mt-0.5" />
+              <div className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed">
+                <p className="text-[#1B0A3B] dark:text-stone-100 font-semibold">Privacy and responsible AI guidance</p>
+                <p className="mt-1">Pessoa keeps the existing safety, privacy and AI guidance behaviour. This section simply makes those choices easier to understand.</p>
+              </div>
+            </div>
+
+            {config.provider !== 'gemini' && (
+              <div className="space-y-3">
+                <SettingToggle
+                  label="Strict offline mode"
+                  description="Blocks outbound web calls when local AI cannot be used."
                   checked={config.strictOffline}
-                  onChange={(e) => setConfig((prev) => ({ ...prev, strictOffline: e.target.checked }))}
-                  className="w-4 h-4 accent-[#1D9E75] dark:accent-[#28c093] rounded cursor-pointer"
+                  onChange={(checked) => setConfig((prev) => ({ ...prev, strictOffline: checked }))}
                 />
-              </div>
-
-              <div className="flex items-center justify-between p-3 bg-stone-50 dark:bg-stone-900/40 rounded-lg border border-stone-200 dark:border-stone-800">
-                <div>
-                  <span className="font-semibold text-stone-800 dark:text-stone-200 block text-xs">
-                    Auto-Fallback to Cloud AI
-                  </span>
-                  <span className="text-[11px] text-stone-500 block">
-                    Use server-side Gemini Cloud temporarily if your local GPU is busy.
-                  </span>
-                </div>
-                <input
-                  type="checkbox"
+                <SettingToggle
+                  label="Allow cloud fallback"
+                  description="Allows Pessoa to use Gemini Cloud if your local AI is unavailable."
                   checked={config.autoFallback}
-                  onChange={(e) => setConfig((prev) => ({ ...prev, autoFallback: e.target.checked }))}
-                  className="w-4 h-4 accent-[#1D9E75] dark:accent-[#28c093] rounded cursor-pointer"
+                  onChange={(checked) => setConfig((prev) => ({ ...prev, autoFallback: checked }))}
                 />
               </div>
+            )}
+
+            <div className="rounded-lg bg-stone-50 dark:bg-stone-900/50 border border-stone-200 dark:border-stone-800 p-3.5 text-sm text-stone-600 dark:text-stone-400 leading-relaxed">
+              <strong className="text-[#1B0A3B] dark:text-stone-100">Current connection:</strong> {selectedMeta.name}. {selectedMeta.offlineSecurity}
             </div>
           </div>
         )}
+      </div>
 
-        {/* SAVE CONFIGURATION BUTTON */}
-        <div className="flex items-center gap-3 pt-1">
-          <button
-            type="submit"
-            className="font-sans text-xs bg-[#912A4A] hover:bg-[#78223d] text-white font-semibold px-5 py-2.5 rounded-xl transition-all cursor-pointer shadow-xs"
-          >
-            Apply & Save AI Configuration
-          </button>
-
-          {saveSuccess && (
-            <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 flex items-center gap-1 animate-fadeIn">
-              <CheckCircle2 className="w-4 h-4" />
-              Settings saved successfully.
-            </span>
-          )}
-        </div>
+      <form onSubmit={handleSave} className="flex flex-wrap items-center gap-3 pt-2">
+        <button
+          type="submit"
+          className="min-h-11 font-sans text-sm bg-[#912A4A] hover:bg-[#78223d] text-white font-semibold px-5 py-2.5 rounded-xl transition-colors cursor-pointer"
+        >
+          Apply & Save AI Configuration
+        </button>
+        {saveSuccess && (
+          <span className="text-sm font-semibold text-[#1D9E75] flex items-center gap-1.5">
+            <CheckCircle2 className="w-4 h-4" />
+            Settings saved successfully.
+          </span>
+        )}
       </form>
     </div>
+  );
+}
+
+function ProviderSetup({
+  provider,
+  meta,
+  config,
+  health,
+  isTesting,
+  onTest,
+  onModelSelect,
+  onConfigChange,
+}: {
+  provider: LocalAIProvider;
+  meta: (typeof PROVIDER_INSTRUCTIONS)[LocalAIProvider];
+  config: LocalAIConfig;
+  health: LocalHealthResult;
+  isTesting: boolean;
+  onTest: () => void;
+  onModelSelect: (model: string) => void;
+  onConfigChange: React.Dispatch<React.SetStateAction<LocalAIConfig>>;
+}) {
+  return (
+    <div className="border-t border-stone-200 dark:border-stone-800 px-4 py-4 space-y-4">
+      <div className="space-y-2 text-sm text-stone-600 dark:text-stone-400 leading-relaxed">
+        <p className="font-semibold text-[#1B0A3B] dark:text-stone-100">How to connect</p>
+        <ol className="list-decimal list-inside space-y-1.5">
+          {meta.installationSteps.map((step, index) => <li key={index}>{step}</li>)}
+        </ol>
+        <p><strong className="text-[#1B0A3B] dark:text-stone-100">You need:</strong> {meta.prerequisites.join(', ')}</p>
+      </div>
+
+      {provider !== 'gemini' && provider !== 'webllm' && (
+        <div className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label className="block text-sm text-stone-600 dark:text-stone-400">
+              <span className="block mb-1 font-semibold text-[#1B0A3B] dark:text-stone-100">Server URL</span>
+              <input
+                type="text"
+                value={config.baseUrl}
+                onChange={(e) => onConfigChange((prev) => ({ ...prev, baseUrl: e.target.value }))}
+                placeholder="e.g. http://localhost:11434"
+                className="w-full min-h-11 px-3 py-2 border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1D9E75]"
+              />
+            </label>
+            <label className="block text-sm text-stone-600 dark:text-stone-400">
+              <span className="block mb-1 font-semibold text-[#1B0A3B] dark:text-stone-100">API key (optional)</span>
+              <input
+                type="password"
+                value={config.apiKey || ''}
+                onChange={(e) => onConfigChange((prev) => ({ ...prev, apiKey: e.target.value }))}
+                placeholder="Leave blank if not required"
+                className="w-full min-h-11 px-3 py-2 border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1D9E75]"
+              />
+            </label>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <button type="button" onClick={onTest} className="min-h-11 px-4 py-2 text-sm font-medium rounded-lg border border-stone-200 dark:border-stone-800 hover:bg-stone-50 dark:hover:bg-stone-900">
+              {isTesting ? <span className="inline-flex items-center gap-2"><RefreshCw className="w-4 h-4 animate-spin" /> Testing connection...</span> : 'Test connection'}
+            </button>
+            {!isTesting && health.status === 'connected' && <span className="text-sm text-[#1D9E75] inline-flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4" /> Connected{health.latencyMs ? ` (${health.latencyMs}ms)` : ''}</span>}
+            {!isTesting && health.status === 'offline' && <span className="text-sm text-amber-700 dark:text-amber-300 inline-flex items-center gap-1.5"><AlertCircle className="w-4 h-4" /> Local server offline</span>}
+          </div>
+
+          {health.details && <p className="text-xs font-mono text-stone-500 bg-stone-50 dark:bg-stone-900/50 p-3 rounded-lg break-words">{health.details}</p>}
+
+          {health.detectedModels.length > 0 && (
+            <div className="space-y-2">
+              <span className="block text-sm font-semibold text-[#1B0A3B] dark:text-stone-100">Models found on this device</span>
+              <div className="flex flex-wrap gap-2">
+                {health.detectedModels.map((model) => (
+                  <button
+                    key={model}
+                    type="button"
+                    onClick={() => onModelSelect(model)}
+                    className={`min-h-11 px-3 rounded-lg border text-sm font-mono ${config.model === model ? 'bg-[#1D9E75]/10 border-[#1D9E75] text-[#1B0A3B] dark:text-stone-100' : 'border-stone-200 dark:border-stone-800'}`}
+                  >
+                    {model}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {provider === 'webllm' && (
+        <div className="space-y-3">
+          <label className="block text-sm font-semibold text-[#1B0A3B] dark:text-stone-100">Browser model</label>
+          <div className="grid grid-cols-1 gap-2">
+            {WEBL_MODELS.map((model) => (
+              <button
+                key={model.id}
+                type="button"
+                onClick={() => onModelSelect(model.id)}
+                className={`min-h-11 text-left px-3 py-3 rounded-lg border ${config.model === model.id ? 'border-[#1D9E75] bg-[#1D9E75]/5' : 'border-stone-200 dark:border-stone-800'}`}
+              >
+                <span className="text-sm font-semibold text-[#1B0A3B] dark:text-stone-100">{model.name}</span>
+                <span className="block mt-1 text-sm text-stone-600 dark:text-stone-400">{model.description}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {provider !== 'gemini' && provider !== 'webllm' && (
+        <div className="space-y-3 border-t border-stone-200 dark:border-stone-800 pt-3">
+          <label className="block text-sm font-semibold text-[#1B0A3B] dark:text-stone-100">Model name</label>
+          <input
+            type="text"
+            value={config.model}
+            onChange={(e) => onConfigChange((prev) => ({ ...prev, model: e.target.value }))}
+            placeholder="e.g. llama3.2, qwen2.5, mistral"
+            className="w-full min-h-11 px-3 py-2 border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 text-sm rounded-lg font-mono focus:outline-none focus:ring-2 focus:ring-[#1D9E75]"
+          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {OPEN_WEIGHT_MODELS.map((model) => (
+              <button
+                key={model.id}
+                type="button"
+                onClick={() => onModelSelect(model.defaultOllamaName)}
+                className={`min-h-11 text-left px-3 py-2.5 rounded-lg border ${config.model === model.defaultOllamaName ? 'border-[#1D9E75] bg-[#1D9E75]/5' : 'border-stone-200 dark:border-stone-800'}`}
+              >
+                <span className="block text-sm font-semibold text-[#1B0A3B] dark:text-stone-100">{model.name}</span>
+                <span className="block mt-1 text-xs text-stone-500 leading-relaxed">{model.recommendedFor}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="pt-2 border-t border-stone-200 dark:border-stone-800 text-sm text-stone-600 dark:text-stone-400 leading-relaxed">
+        <strong className="text-[#1B0A3B] dark:text-stone-100">Privacy:</strong> {meta.offlineSecurity}
+      </div>
+    </div>
+  );
+}
+
+function SettingToggle({
+  label,
+  description,
+  checked,
+  onChange,
+}: {
+  label: string;
+  description: string;
+  checked: boolean;
+  onChange: (value: boolean) => void;
+}) {
+  return (
+    <label className="min-h-11 flex items-center justify-between gap-4 rounded-lg border border-stone-200 dark:border-stone-800 px-3.5 py-3 cursor-pointer hover:bg-stone-50 dark:hover:bg-stone-900">
+      <span>
+        <span className="block text-sm font-semibold text-[#1B0A3B] dark:text-stone-100">{label}</span>
+        <span className="block mt-1 text-sm text-stone-600 dark:text-stone-400 leading-relaxed">{description}</span>
+      </span>
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="w-5 h-5 shrink-0 accent-[#1D9E75]"
+      />
+    </label>
   );
 }
