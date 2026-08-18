@@ -1,0 +1,27 @@
+/* Final Quiet Drafting Desk alignment refinement */
+
+/* Project starts on the same x-coordinate as the page title/content column. */
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:nth-child(2) {
+  justify-self: start !important;
+  margin-left: 0 !important;
+  border-radius: 0.65rem !important;
+  border-color: rgba(145, 42, 74, 0.14) !important;
+}
+
+/* Remove the spacing that previously pushed Chapter away from the title axis. */
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child > .relative {
+  margin-left: 0 !important;
+}
+
+/* Project and Chapter share the same quiet rounded treatment. */
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:nth-child(2),
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child > .relative > div {
+  border-radius: 0.65rem !important;
+}
+
+@media (max-width: 900px) {
+  #second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:nth-child(2),
+  #second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child > .relative {
+    margin-left: 0 !important;
+  }
+}
