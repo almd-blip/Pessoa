@@ -1,0 +1,101 @@
+/* Exact Quiet Drafting Desk layout requested.
+   This is intentionally layout-only: no copy, controls, or behaviour are changed. */
+
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-rows: auto auto;
+  grid-template-areas:
+    "title spacer focus"
+    "project chapter print";
+  align-items: center !important;
+  column-gap: 1rem;
+  row-gap: 0.65rem;
+}
+
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child,
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child {
+  display: contents !important;
+}
+
+/* Row 1: Quiet Drafting Desk + Focus Mode, same Y position. */
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:first-child {
+  grid-area: title;
+  min-width: 0;
+}
+
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) #desk-focus-mode-btn {
+  grid-area: focus;
+  align-self: center !important;
+  margin: 0 !important;
+}
+
+/* Row 2: Project + Chapter + Print Notes, same Y position. */
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:nth-child(2) {
+  grid-area: project;
+  justify-self: start !important;
+  align-self: center !important;
+  margin: 0 !important;
+}
+
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child > .relative {
+  grid-area: chapter;
+  justify-self: start !important;
+  align-self: center !important;
+  margin: 0 !important;
+}
+
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) #desk-print-notes-btn {
+  grid-area: print;
+  justify-self: end !important;
+  align-self: center !important;
+  margin: 0 !important;
+}
+
+/* Project begins on exactly the same X-axis as the page title. */
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:nth-child(2) {
+  padding-left: 0 !important;
+}
+
+/* Project and Chapter outlines: identical, quiet, almost invisible. */
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:nth-child(2),
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child > .relative > div {
+  border-radius: 0.65rem !important;
+  border-color: rgba(145, 42, 74, 0.10) !important;
+  box-shadow: none !important;
+}
+
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:nth-child(2) select {
+  border: 0 !important;
+  border-radius: 0.65rem !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* The Pause prompt shares the exact left X-axis of the desk title/project. */
+#quiet-drafting-desk > div:has(button[aria-label="Dismiss Pause Reminder"]) {
+  margin-left: 0 !important;
+}
+
+#quiet-drafting-desk > div:has(button[aria-label="Dismiss Pause Reminder"]) > div {
+  margin-left: 0 !important;
+}
+
+#quiet-drafting-desk > div:has(button[aria-label="Dismiss Pause Reminder"]) {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 900px) {
+  #second-thought-writing-studio > div:has(#desk-print-notes-btn) {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "title focus"
+      "project project"
+      "chapter print";
+  }
+
+  #second-thought-writing-studio > div:has(#desk-print-notes-btn) #desk-print-notes-btn {
+    justify-self: end !important;
+  }
+}
