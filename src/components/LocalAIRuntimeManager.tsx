@@ -85,7 +85,7 @@ export default function LocalAIRuntimeManager({
   const [isTesting, setIsTesting] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [webGpuStatus, setWebGpuStatus] = useState<{ supported: boolean; adapterName?: string; reason?: string } | null>(null);
-  const [openSection, setOpenSection] = useState<SettingsSection>('beginner');
+  const [openSection, setOpenSection] = useState<SettingsSection | null>('beginner');
   const [showGuideFor, setShowGuideFor] = useState<LocalAIProvider | null>(null);
 
   useEffect(() => {
@@ -178,8 +178,7 @@ export default function LocalAIRuntimeManager({
                           <span className="text-sm font-semibold text-[#1B0A3B] dark:text-stone-100">{model.name}</span>
                           <span className="text-xs text-stone-500">{model.size}</span>
                         </div>
-                        <span className="block mt-1 text-sm text-stone-600 dark:text-stone-400 leading-relaxed">{model.description}</span>
-                        <span className="block mt-1 text-xs text-stone-500">{model.recommendedFor} · {model.memoryReq}</span>
+                        <p className="mt-1 text-sm text-stone-600 dark:text-stone-400 leading-relaxed">{model.description}</p>
                       </button>
                     );
                   })}
@@ -190,15 +189,14 @@ export default function LocalAIRuntimeManager({
             <details className="rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50/60 dark:bg-stone-900/30">
               <summary className="min-h-11 cursor-pointer px-4 py-3 text-sm font-semibold text-[#1B0A3B] dark:text-stone-100">Device and model guidance</summary>
               <div className="px-4 pb-4 text-sm text-stone-600 dark:text-stone-400 leading-relaxed space-y-2">
-                <p><strong className="text-[#1B0A3B] dark:text-stone-100">Smaller models:</strong> better suited to phones, tablets and older computers.</p>
-                <p><strong className="text-[#1B0A3B] dark:text-stone-100">Medium models:</strong> a useful balance for many everyday laptops and desktops.</p>
-                <p><strong className="text-[#1B0A3B] dark:text-stone-100">Larger models:</strong> need more memory and a more powerful computer.</p>
-                <p className="text-xs">The existing model choices remain unchanged.</p>
+                <p>WebGPU availability depends on your browser and device hardware.</p>
+                <p>Smaller models are generally faster and use less memory. Larger models may provide stronger results but need more capable hardware.</p>
               </div>
             </details>
           </div>
         )}
       </div>
+
       <div className="space-y-3">
         <SectionHeader title="Intermediate — Basic setup" description="Connect Pessoa to an AI app on your computer. Choose the app you already use, then use the saved connection details." open={openSection === 'intermediate'} onToggle={() => toggleSection('intermediate')} />
         {openSection === 'intermediate' && (
@@ -213,7 +211,18 @@ export default function LocalAIRuntimeManager({
                       <span className="min-w-0"><span className={`block text-sm font-semibold ${selected ? 'text-[#1D9E75]' : 'text-[#1B0A3B] dark:text-stone-100'}`}>{preset.name}</span><span className="block mt-1 text-sm text-stone-600 dark:text-stone-400 leading-relaxed">{preset.description}</span></span>
                       {showGuideFor === provider ? <ChevronUp className="w-5 h-5 shrink-0" /> : <ChevronDown className="w-5 h-5 shrink-0" />}
                     </button>
-                    {showGuideFor === provider && <ProviderSetup provider={provider} meta={PROVIDER_INSTRUCTIONS[provider]} config={config} health={health} isTesting={isTesting} onTest={() => runHealthCheck(config)} onModelSelect={handleModelSelect} onConfigChange={setConfig} />}
+                    {showGuideFor === provider && (
+                      <ProviderSetup
+                        provider={provider}
+                        meta={PROVIDER_INSTRUCTIONS[provider]}
+                        config={config}
+                        health={health}
+                        isTesting={isTesting}
+                        onTest={() => runHealthCheck(config)}
+                        onModelSelect={handleModelSelect}
+                        onConfigChange={setConfig}
+                      />
+                    )}
                   </div>
                 );
               })}
@@ -221,6 +230,7 @@ export default function LocalAIRuntimeManager({
           </div>
         )}
       </div>
+
       <div className="space-y-3">
         <SectionHeader title="Advanced — Cloud or private server setup" description="Use your own private AI server or a cloud AI service. Choose this only if you already know how your server or API is set up." open={openSection === 'advanced'} onToggle={() => toggleSection('advanced')} />
         {openSection === 'advanced' && (
@@ -236,21 +246,56 @@ export default function LocalAIRuntimeManager({
                     <span className="min-w-0"><span className={`block text-sm font-semibold ${selected ? 'text-[#1D9E75]' : 'text-[#1B0A3B] dark:text-stone-100'}`}>{title}</span><span className="block mt-1 text-sm text-stone-600 dark:text-stone-400 leading-relaxed">{description}</span></span>
                     {showGuideFor === provider ? <ChevronUp className="w-5 h-5 shrink-0" /> : <ChevronDown className="w-5 h-5 shrink-0" />}
                   </button>
-                  {showGuideFor === provider && <ProviderSetup provider={provider} meta={meta} config={config} health={health} isTesting={isTesting} onTest={() => runHealthCheck(config)} onModelSelect={handleModelSelect} onConfigChange={setConfig} />}
+                  {showGuideFor === provider && (
+                    <ProviderSetup
+                      provider={provider}
+                      meta={meta}
+                      config={config}
+                      health={health}
+                      isTesting={isTesting}
+                      onTest={() => runHealthCheck(config)}
+                      onModelSelect={handleModelSelect}
+                      onConfigChange={setConfig}
+                    />
+                  )}
                 </div>
               );
             })}
           </div>
         )}
       </div>
+
       <div className="space-y-3">
         <SectionHeader title="Guidance & privacy" description="Choose how Pessoa should support your work. These settings help it protect your voice, use citations carefully, and avoid pretending it knows something it cannot verify." open={openSection === 'guidance'} onToggle={() => toggleSection('guidance')} />
         {openSection === 'guidance' && (
-          <div className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 p-4 sm:p-5 space-y-4">
-            <div className="flex items-start gap-3"><Shield className="w-5 h-5 text-[#912A4A] shrink-0 mt-0.5" /><div className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed"><p className="text-[#1B0A3B] dark:text-stone-100 font-semibold">Privacy and guidance</p><p className="mt-1">Your existing privacy and guidance controls remain available here.</p></div></div>
+          <div className="space-y-4 pl-0 sm:pl-2">
+            <div className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 p-4 sm:p-5 space-y-4">
+              <div className="flex items-start gap-3">
+                <Shield className="w-5 h-5 text-[#912A4A] shrink-0 mt-0.5" />
+                <div className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed">
+                  <p className="text-[#1B0A3B] dark:text-stone-100 font-semibold">Privacy and guidance</p>
+                  <p className="mt-1">Your existing privacy and guidance controls remain available here.</p>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
+
+      <form onSubmit={handleSave} className="flex flex-wrap items-center gap-3 pt-2">
+        <button
+          type="submit"
+          className="min-h-11 font-sans text-sm bg-[#912A4A] hover:bg-[#78223d] text-white font-semibold px-5 py-2.5 rounded-xl transition-colors cursor-pointer"
+        >
+          Apply & Save AI Configuration
+        </button>
+        {saveSuccess && (
+          <span className="text-sm font-semibold text-[#1D9E75] flex items-center gap-1.5">
+            <CheckCircle2 className="w-4 h-4" />
+            Settings saved successfully.
+          </span>
+        )}
+      </form>
     </div>
   );
 }
@@ -276,12 +321,45 @@ function ProviderSetup({
 }) {
   return (
     <div className="border-t border-stone-200 dark:border-stone-800 p-4 sm:p-5 space-y-4">
-      <div className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed">{meta?.steps?.map((step: string, index: number) => <p key={index} className="mb-2">{step}</p>)}</div>
-      {provider !== 'gemini' && <>
-        <label className="block text-sm font-semibold text-[#1B0A3B] dark:text-stone-100">Model<select value={config.model} onChange={(e) => onModelSelect(e.target.value)} className="mt-1.5 w-full min-h-11 rounded-lg border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-950 px-3 text-sm">{OPEN_WEIGHT_MODELS.map((model) => <option key={model.id} value={model.id}>{model.name}</option>)}</select></label>
-        <label className="block text-sm font-semibold text-[#1B0A3B] dark:text-stone-100">Server address<input type="url" value={config.baseUrl} onChange={(e) => onConfigChange((prev) => ({ ...prev, baseUrl: e.target.value }))} className="mt-1.5 w-full min-h-11 rounded-lg border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-950 px-3 text-sm" /></label>
-      </>}
-      <div className="flex flex-wrap items-center gap-3"><button type="button" onClick={onTest} disabled={isTesting} className="min-h-11 rounded-lg px-4 text-sm font-semibold border border-stone-300 dark:border-stone-700">{isTesting ? 'Testing…' : 'Test connection'}</button><span className="text-sm text-stone-600 dark:text-stone-400">{health.status}</span></div>
+      <div className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed">
+        {meta?.steps?.map((step: string, index: number) => (
+          <p key={index} className="mb-2">{step}</p>
+        ))}
+      </div>
+
+      {provider !== 'gemini' && (
+        <>
+          <label className="block text-sm font-semibold text-[#1B0A3B] dark:text-stone-100">
+            Model
+            <select
+              value={config.model}
+              onChange={(e) => onModelSelect(e.target.value)}
+              className="mt-1.5 w-full min-h-11 rounded-lg border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-950 px-3 text-sm"
+            >
+              {OPEN_WEIGHT_MODELS.map((model) => (
+                <option key={model.id} value={model.id}>{model.name}</option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block text-sm font-semibold text-[#1B0A3B] dark:text-stone-100">
+            Server address
+            <input
+              type="url"
+              value={config.baseUrl}
+              onChange={(e) => onConfigChange((prev) => ({ ...prev, baseUrl: e.target.value }))}
+              className="mt-1.5 w-full min-h-11 rounded-lg border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-950 px-3 text-sm"
+            />
+          </label>
+        </>
+      )}
+
+      <div className="flex flex-wrap items-center gap-3">
+        <button type="button" onClick={onTest} disabled={isTesting} className="min-h-11 rounded-lg px-4 text-sm font-semibold border border-stone-300 dark:border-stone-700">
+          {isTesting ? 'Testing…' : 'Test connection'}
+        </button>
+        <span className="text-sm text-stone-600 dark:text-stone-400">{health.status}</span>
+      </div>
     </div>
   );
 }
