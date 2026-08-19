@@ -1,4 +1,4 @@
-/* Quiet Drafting Desk — exact requested header layout.
+/* Quiet Drafting Desk — authoritative header layout.
    Presentation-only. Existing controls and behaviour remain unchanged. */
 
 #second-thought-writing-studio > div:has(#desk-print-notes-btn) {
@@ -6,8 +6,8 @@
   grid-template-columns: max-content max-content max-content max-content;
   grid-template-rows: auto auto;
   grid-template-areas:
-    "title focus focus focus"
-    "project chapter create notes";
+    "title focus . ."
+    "project chapter . notes";
   align-items: center !important;
   justify-content: start !important;
   column-gap: 0.75rem;
@@ -15,13 +15,14 @@
   width: 100%;
 }
 
-/* Existing wrapper elements become transparent to the grid. */
+/* Flatten the two existing wrapper layers so the actual controls become grid items. */
 #second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child,
-#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child {
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child,
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child > div:last-child {
   display: contents !important;
 }
 
-/* Row 1: Quiet Drafting Desk + Focus Mode, same Y position and genuinely close together. */
+/* Row 1: title + Focus Mode. */
 #second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:first-child {
   grid-area: title;
   align-self: center !important;
@@ -37,7 +38,12 @@
   margin: 0 !important;
 }
 
-/* Row 2: Project | Chapter | + Create New Project | Print Notes, all sharing one Y position. */
+/* The old Draft Editor badge is not part of the approved hierarchy. */
+#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:first-child > span {
+  display: none !important;
+}
+
+/* Row 2: Project + Chapter + Print Notes. */
 #second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:nth-child(2) {
   grid-area: project;
   align-self: center !important;
@@ -80,7 +86,6 @@
   line-height: 1.4 !important;
 }
 
-/* Print Notes remains the final item on row 2. */
 #second-thought-writing-studio > div:has(#desk-print-notes-btn) #desk-print-notes-btn {
   grid-area: notes;
   align-self: center !important;
@@ -93,32 +98,15 @@
   font-size: 0.95rem !important;
 }
 
-/* The visible Draft Editor label is not part of the requested hierarchy. */
-#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:first-child > span {
-  display: none !important;
-}
-
-/* Existing project/chapter controls remain quiet and unboxed in appearance. */
-#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:nth-child(2),
-#second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child > .relative > div {
-  box-shadow: none !important;
-}
-
 @media (max-width: 900px) {
   #second-thought-writing-studio > div:has(#desk-print-notes-btn) {
     grid-template-columns: max-content max-content max-content max-content;
     grid-template-areas:
-      "title focus focus focus"
-      "project chapter create notes";
+      "title focus . ."
+      "project chapter . notes";
     column-gap: 0.5rem;
     row-gap: 0.6rem;
     overflow-x: auto;
-  }
-
-  #second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:nth-child(2),
-  #second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:last-child > .relative,
-  #second-thought-writing-studio > div:has(#desk-print-notes-btn) #desk-print-notes-btn {
-    min-width: 0;
   }
 }
 
