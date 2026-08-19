@@ -28,7 +28,7 @@ type SettingsSection = 'beginner' | 'intermediate' | 'advanced' | 'guidance';
 
 function SectionHeader({ title, description, open, onToggle }: { title: string; description: string; open: boolean; onToggle: () => void }) {
   return (
-    <button type="button" onClick={onToggle} aria-expanded={open} className="w-full min-h-11 text-left flex items-center justify-between gap-4 py-3.5 border-b border-stone-200 dark:border-stone-800 hover:bg-stone-50/50 dark:hover:bg-stone-900/30 transition-colors">
+    <button type="button" onClick={onToggle} aria-expanded={open} className="w-full min-h-11 text-left flex items-center justify-between gap-4 py-3.5 hover:bg-stone-50/50 dark:hover:bg-stone-900/30 transition-colors">
       <span className="min-w-0">
         <span className="block text-base font-semibold text-[#1B0A3B] dark:text-stone-100 leading-snug">{title}</span>
         <span className="block mt-1 text-sm text-stone-600 dark:text-stone-400 leading-relaxed">{description}</span>
@@ -86,9 +86,9 @@ export default function LocalAIRuntimeManager({ onConfigSaved, compact = false }
 
   const handleDownloadModel = async (modelId: string) => {
     if (downloadingModel) return;
-    if (!webGpuStatus?.supported) {
+    if (webGpuStatus && !webGpuStatus.supported) {
       setDownloadProgress(null);
-      setDownloadMessage(webGpuStatus?.reason || 'Your browser is not ready to run browser AI.');
+      setDownloadMessage(webGpuStatus.reason || 'Your browser is not ready to run browser AI.');
       return;
     }
 
@@ -106,7 +106,7 @@ export default function LocalAIRuntimeManager({ onConfigSaved, compact = false }
     } catch (error) {
       console.error('Failed to download browser AI model:', error);
       setDownloadProgress(null);
-      setDownloadMessage('The download could not be completed. Check your browser and internet connection and try again.');
+      setDownloadMessage('The model could not be downloaded. Please check your browser and internet connection and try again.');
     } finally {
       setDownloadingModel(null);
     }
@@ -133,7 +133,7 @@ export default function LocalAIRuntimeManager({ onConfigSaved, compact = false }
         <p className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed">The options below are suggestions to help you get started. Other compatible models and AI services may also be available.</p>
       </div>
 
-      <div className="space-y-6">
+      <div>
         <SectionHeader title="Beginner — Use AI in your browser" description="No AI app to install. Pessoa runs the AI model directly on this device." open={openSection === 'beginner'} onToggle={() => toggleSection('beginner')} />
         {openSection === 'beginner' && (
           <div className="space-y-6 pt-2">
@@ -188,7 +188,9 @@ export default function LocalAIRuntimeManager({ onConfigSaved, compact = false }
         )}
       </div>
 
-      <div className="space-y-6">
+      <div className="my-6 h-[2px] w-full bg-[#912A4A]" aria-hidden="true" />
+
+      <div>
         <SectionHeader title="Intermediate — Connect an AI app on your computer" description="Use an AI app such as Ollama or LM Studio. Pessoa will guide you through choosing, installing and connecting it." open={openSection === 'intermediate'} onToggle={() => toggleSection('intermediate')} />
         {openSection === 'intermediate' && (
           <div className="space-y-4 pt-2">
@@ -212,7 +214,9 @@ export default function LocalAIRuntimeManager({ onConfigSaved, compact = false }
         )}
       </div>
 
-      <div className="space-y-6">
+      <div className="my-6 h-[2px] w-full bg-[#912A4A]" aria-hidden="true" />
+
+      <div>
         <SectionHeader title="Advanced — Use your own server or cloud AI" description="Connect Pessoa to a private server or a cloud AI service you have already set up." open={openSection === 'advanced'} onToggle={() => toggleSection('advanced')} />
         {openSection === 'advanced' && (
           <div className="space-y-4 pt-2">
