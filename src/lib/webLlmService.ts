@@ -26,6 +26,22 @@ export const WEBL_MODELS: WebLLMModelOption[] = [
     isDefault: true,
   },
   {
+    id: 'SmolLM2-1.7B-Instruct-q4f16_1-MLC',
+    name: 'SmolLM2 1.7B (Ultra-Light)',
+    size: '~1.0 GB',
+    memoryReq: '2 GB+ RAM / GPU',
+    description: 'Smallest footprint model for quick browser testing.',
+    recommendedFor: 'Good for less powerful devices and quick testing.',
+  },
+  {
+    id: 'Gemma-2-2B-It-q4f16_1-MLC',
+    name: 'Google Gemma 2 2B (Lightweight)',
+    size: '~1.4 GB',
+    memoryReq: '3 GB+ RAM / GPU',
+    description: '',
+    recommendedFor: 'Budget laptops, tablets, or devices with less memory',
+  },
+  {
     id: 'Llama-3.2-3B-Instruct-q4f16_1-MLC',
     name: 'Meta Llama 3.2 3B (High-quality conversational synthesis)',
     size: '~2.1 GB',
@@ -40,22 +56,6 @@ export const WEBL_MODELS: WebLLMModelOption[] = [
     memoryReq: '8 GB+ RAM / GPU',
     description: '',
     recommendedFor: 'Modern desktops and laptops with a dedicated graphics card (8GB+ RAM)',
-  },
-  {
-    id: 'Gemma-2-2B-It-q4f16_1-MLC',
-    name: 'Google Gemma 2 2B (Lightweight)',
-    size: '~1.4 GB',
-    memoryReq: '3 GB+ RAM / GPU',
-    description: '',
-    recommendedFor: 'Budget laptops, tablets, or devices with less memory',
-  },
-  {
-    id: 'SmolLM2-1.7B-Instruct-q4f16_1-MLC',
-    name: 'SmolLM2 1.7B (Ultra-Light)',
-    size: '~1.0 GB',
-    memoryReq: '2 GB+ RAM / GPU',
-    description: 'Smallest footprint model for quick browser testing.',
-    recommendedFor: 'Good for less powerful devices and quick testing.',
   },
 ];
 
