@@ -133,7 +133,7 @@ export default function LocalAIRuntimeManager({ onConfigSaved, compact = false }
         <p className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed">The options below are suggestions to help you get started. Other compatible models and AI services may also be available.</p>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-6">
         <SectionHeader title="Beginner — Use AI in your browser" description="No AI app to install. Pessoa runs the AI model directly on this device." open={openSection === 'beginner'} onToggle={() => toggleSection('beginner')} />
         {openSection === 'beginner' && (
           <div className="space-y-6 pt-2">
@@ -161,7 +161,7 @@ export default function LocalAIRuntimeManager({ onConfigSaved, compact = false }
               </button>
 
               {showAllModels && (
-                <div className="mt-4 space-y-4 border-l-2 border-stone-200 dark:border-stone-800 pl-4">
+                <div className="mt-4 space-y-4">
                   {additionalWebModels.map((model) => (
                     <button key={model.id} type="button" onClick={() => { handleModelSelect(model.id); setShowAllModels(false); setDownloadProgress(null); setDownloadMessage(''); }} className="block w-full text-left py-1 hover:text-[#912A4A]">
                       <span className="block text-sm font-semibold text-[#1B0A3B] dark:text-stone-100">{model.name}</span>
@@ -188,7 +188,7 @@ export default function LocalAIRuntimeManager({ onConfigSaved, compact = false }
         )}
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-6">
         <SectionHeader title="Intermediate — Connect an AI app on your computer" description="Use an AI app such as Ollama or LM Studio. Pessoa will guide you through choosing, installing and connecting it." open={openSection === 'intermediate'} onToggle={() => toggleSection('intermediate')} />
         {openSection === 'intermediate' && (
           <div className="space-y-4 pt-2">
@@ -212,7 +212,7 @@ export default function LocalAIRuntimeManager({ onConfigSaved, compact = false }
         )}
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-6">
         <SectionHeader title="Advanced — Use your own server or cloud AI" description="Connect Pessoa to a private server or a cloud AI service you have already set up." open={openSection === 'advanced'} onToggle={() => toggleSection('advanced')} />
         {openSection === 'advanced' && (
           <div className="space-y-4 pt-2">
@@ -236,7 +236,7 @@ export default function LocalAIRuntimeManager({ onConfigSaved, compact = false }
         )}
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-6">
         <SectionHeader title="Guidance & privacy" description="Choose how Pessoa should support your work and handle evidence, citations and uncertainty." open={openSection === 'guidance'} onToggle={() => toggleSection('guidance')} />
         {openSection === 'guidance' && <div className="pt-2"><div className="flex items-start gap-3"><Shield className="w-5 h-5 text-[#912A4A] shrink-0 mt-0.5" /><div className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed"><p className="font-semibold text-[#1B0A3B] dark:text-stone-100">Privacy and guidance</p><p className="mt-1">Pessoa can help protect your voice, use citations carefully, and tell you when something cannot be verified.</p></div></div></div>}
       </div>
