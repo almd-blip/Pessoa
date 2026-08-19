@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { CreateMLCEngine, MLCEngine, InitProgressReport } from '@mlc-ai/web-llm';
+import { CreateMLCEngine, MLCEngine, InitProgressReport, prebuiltAppConfig } from '@mlc-ai/web-llm';
 
 export interface WebLLMModelOption {
   id: string;
@@ -34,7 +34,7 @@ export const WEBL_MODELS: WebLLMModelOption[] = [
     recommendedFor: 'Good for less powerful devices and quick testing.',
   },
   {
-    id: 'Gemma-2-2B-It-q4f16_1-MLC',
+    id: 'gemma-2-2b-it-q4f16_1-MLC',
     name: 'Google Gemma 2 2B (Lightweight)',
     size: '~1.4 GB',
     memoryReq: '3 GB+ RAM / GPU',
@@ -104,21 +104,31 @@ export async function checkWebGPUSupport(): Promise<WebGPUCapability> {
 
 /**
  * Get the singleton MLCEngine or initialize one.
+ * Model IDs are normalized against WebLLM's prebuilt model registry so that
+ * display labels cannot accidentally use a different casing from the runtime ID.
  */
 export async function getOrInitWebLLMEngine(
   modelId: string = 'Qwen2.5-3B-Instruct-q4f16_1-MLC',
   onProgress?: (report: InitProgressReport) => void
 ): Promise<MLCEngine> {
-  if (activeEngine && currentLoadedModelId === modelId) {
+  const registeredModel = prebuiltAppConfig.model_list.find(
+    (model) => model.model_id?.toLowerCase() === modelId.toLowerCase()
+  );
+  const canonicalModelId = registeredModel?.model_id || modelId;
+
+  if (!registeredModel) {
+    throw new Error(`The selected browser AI model is not available in this WebLLM build: ${modelId}`);
+  }
+
+  if (activeEngine && currentLoadedModelId === canonicalModelId) {
     return activeEngine;
   }
 
   if (isInitializing) {
-    // Wait briefly if already loading
     while (isInitializing) {
       await new Promise((resolve) => setTimeout(resolve, 300));
     }
-    if (activeEngine && currentLoadedModelId === modelId) {
+    if (activeEngine && currentLoadedModelId === canonicalModelId) {
       return activeEngine;
     }
   }
@@ -131,16 +141,18 @@ export async function getOrInitWebLLMEngine(
       } catch (e) {
         console.warn('Error unloading previous WebLLM model:', e);
       }
+      activeEngine = null;
+      currentLoadedModelId = null;
     }
 
-    const engine = await CreateMLCEngine(modelId, {
+    const engine = await CreateMLCEngine(canonicalModelId, {
       initProgressCallback: (report) => {
         if (onProgress) onProgress(report);
       },
     });
 
     activeEngine = engine;
-    currentLoadedModelId = modelId;
+    currentLoadedModelId = canonicalModelId;
     return engine;
   } finally {
     isInitializing = false;
@@ -154,14 +166,12 @@ export async function getOrInitWebLLMEngine(
 export function safeExtractJson<T = any>(rawText: string): T {
   if (!rawText) return {} as T;
 
-  // 1. Strip markdown fences if present
   let clean = rawText
     .replace(/^```json/gim, '')
     .replace(/^```/gim, '')
     .replace(/```$/gim, '')
     .trim();
 
-  // 2. Locate outermost JSON structure ({ ... } or [ ... ])
   const firstBrace = clean.indexOf('{');
   const firstBracket = clean.indexOf('[');
   
@@ -187,11 +197,10 @@ export function safeExtractJson<T = any>(rawText: string): T {
   try {
     return JSON.parse(clean);
   } catch {
-    // Attempt standard syntax repairs (trailing commas, unescaped newlines in strings)
     try {
       const repaired = clean
-        .replace(/,\s*([}\]])/g, '$1') // remove trailing commas
-        .replace(/[\n\r\t]/g, ' ');   // clean raw control characters
+        .replace(/,\s*([}\]])/g, '$1')
+        .replace(/[\n\r\t]/g, ' ');
       return JSON.parse(repaired);
     } catch (parseErr) {
       console.warn('Failed to parse model output as JSON:', rawText);
