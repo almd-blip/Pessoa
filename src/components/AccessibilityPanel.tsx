@@ -70,17 +70,13 @@ export default function AccessibilityPanel({
 
   return (
     <div className="space-y-8 text-left" id="accessibility-control-panel" role="region" aria-label="Accessibility and Comfort Control Panel">
-      
-      {/* Screen Reader Live Announcement */}
       <div className="sr-only" aria-live="polite" aria-atomic="true" id="acc-sr-announcer">
         {announceMsg}
       </div>
 
-      {/* Header & Calm Intro */}
       <div className="border-b pb-4 border-current/10 flex items-start justify-between gap-4" id="acc-header-block">
         <div className="space-y-1" id="acc-header-titles">
           <div className="flex items-center gap-2">
-            
             <h3 className="text-lg font-semibold tracking-tight" id="acc-title-main">
               Accessibility & Comfort Panel
             </h3>
@@ -103,10 +99,8 @@ export default function AccessibilityPanel({
         )}
       </div>
 
-      {/* SECTION 1: Text and Reading */}
       <section className="space-y-3" id="acc-sec-text-reading" aria-labelledby="acc-sec-text-title">
         <div className="flex items-center gap-2 text-xs font-semibold opacity-70" id="acc-sec-text-title">
-          
           <span>1. Text and Reading</span>
         </div>
 
@@ -128,13 +122,12 @@ export default function AccessibilityPanel({
                   onClick={() => updateSetting('fontSize', opt.id as any, `Text size set to ${opt.label}`)}
                   className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between min-h-[64px] ${
                     isSelected
-                      ? 'bg-current text-background border-current font-semibold shadow-xs'
+                      ? 'bg-[#1B0A3B] text-white border-[#1B0A3B] font-semibold shadow-xs'
                       : 'border-current/20 hover:border-current/50 bg-current/[0.02]'
                   }`}
                 >
                   <div className="flex justify-between items-center w-full">
                     <span className="text-xs font-medium">{opt.label}</span>
-                    {isSelected }
                   </div>
                   <span className="text-xs opacity-75">{opt.desc}</span>
                 </button>
@@ -144,10 +137,8 @@ export default function AccessibilityPanel({
         </div>
       </section>
 
-      {/* SECTION 2: Display Mode */}
       <section className="space-y-3 pt-4 border-t border-current/10" id="acc-sec-display" aria-labelledby="acc-sec-display-title">
         <div className="flex items-center gap-2 text-xs font-semibold opacity-70" id="acc-sec-display-title">
-          
           <span>2. Display Mode</span>
         </div>
 
@@ -168,7 +159,7 @@ export default function AccessibilityPanel({
                 onClick={() => updateSetting('displayMode', opt.id as any, `Display mode changed to ${opt.label}`)}
                 className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between min-h-[80px] ${
                   isSelected
-                    ? 'bg-current text-background border-current font-semibold shadow-xs'
+                    ? 'bg-[#1B0A3B] text-white border-[#1B0A3B] font-semibold shadow-xs'
                     : 'border-current/20 hover:border-current/50 bg-current/[0.02]'
                 }`}
               >
@@ -182,14 +173,11 @@ export default function AccessibilityPanel({
         </div>
       </section>
 
-      {/* SECTION 3: Reading Support */}
       <section className="space-y-4 pt-4 border-t border-current/10" id="acc-sec-reading-support" aria-labelledby="acc-sec-reading-title">
         <div className="flex items-center gap-2 text-xs font-semibold opacity-70" id="acc-sec-reading-title">
-          
           <span>3. Reading Support</span>
         </div>
 
-        {/* Dyslexia-friendly font toggle */}
         <div className="p-3.5 rounded-xl border border-current/20 bg-current/[0.02] flex items-center justify-between gap-4" id="acc-dyslexia-box">
           <div className="space-y-0.5" id="acc-dyslexia-txt">
             <span className="text-xs font-medium block" id="acc-dyslexia-lbl">Dyslexia-friendly font (Atkinson Hyperlegible)</span>
@@ -206,7 +194,7 @@ export default function AccessibilityPanel({
             onClick={() => updateSetting('dyslexiaFont', !settings.dyslexiaFont, settings.dyslexiaFont ? 'Dyslexia font disabled' : 'Dyslexia font enabled')}
             className={`px-4 py-2 text-xs font-semibold rounded-lg border cursor-pointer transition-all shrink-0 flex items-center gap-2 ${
               settings.dyslexiaFont
-                ? 'bg-current text-background border-current shadow-xs'
+                ? 'bg-[#1B0A3B] text-white border-[#1B0A3B] shadow-xs'
                 : 'border-current/30 hover:border-current/60 opacity-80'
             }`}
           >
@@ -215,7 +203,6 @@ export default function AccessibilityPanel({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6" id="acc-reading-controls-grid">
-          {/* Letter Spacing */}
           <div className="space-y-1.5" id="acc-letter-spacing-group">
             <label className="text-xs font-medium opacity-90 block">Letter spacing</label>
             <div className="flex flex-col gap-1" role="radiogroup" aria-label="Letter spacing options">
@@ -232,18 +219,16 @@ export default function AccessibilityPanel({
                   onClick={() => updateSetting('letterSpacing', sp.id as any, `Letter spacing set to ${sp.label}`)}
                   className={`px-3 py-2 min-h-[44px] rounded-lg border text-xs text-left transition-all cursor-pointer flex justify-between items-center ${
                     settings.letterSpacing === sp.id
-                      ? 'bg-current text-background border-current font-semibold'
+                      ? 'bg-[#1B0A3B] text-white border-[#1B0A3B] font-semibold'
                       : 'border-current/20 hover:border-current/40'
                   }`}
                 >
                   <span>{sp.label}</span>
-                  {settings.letterSpacing === sp.id }
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Line Spacing */}
           <div className="space-y-1.5" id="acc-line-spacing-group">
             <label className="text-xs font-medium opacity-90 block">Line spacing</label>
             <div className="flex flex-col gap-1" role="radiogroup" aria-label="Line height options">
@@ -260,18 +245,16 @@ export default function AccessibilityPanel({
                   onClick={() => updateSetting('lineHeight', lh.id as any, `Line height set to ${lh.label}`)}
                   className={`px-3 py-2 min-h-[44px] rounded-lg border text-xs text-left transition-all cursor-pointer flex justify-between items-center ${
                     settings.lineHeight === lh.id
-                      ? 'bg-current text-background border-current font-semibold'
+                      ? 'bg-[#1B0A3B] text-white border-[#1B0A3B] font-semibold'
                       : 'border-current/20 hover:border-current/40'
                   }`}
                 >
                   <span>{lh.label}</span>
-                  {settings.lineHeight === lh.id }
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Reading Width */}
           <div className="space-y-1.5" id="acc-reading-width-group">
             <label className="text-xs font-medium opacity-90 block">Reading width</label>
             <div className="flex flex-col gap-1" role="radiogroup" aria-label="Reading container width options">
@@ -289,12 +272,11 @@ export default function AccessibilityPanel({
                   onClick={() => updateSetting('readingWidth', rw.id as any, `Reading width set to ${rw.label}`)}
                   className={`px-3 py-2 min-h-[44px] rounded-lg border text-xs text-left transition-all cursor-pointer flex justify-between items-center ${
                     settings.readingWidth === rw.id
-                      ? 'bg-current text-background border-current font-semibold'
+                      ? 'bg-[#1B0A3B] text-white border-[#1B0A3B] font-semibold'
                       : 'border-current/20 hover:border-current/40'
                   }`}
                 >
                   <span>{rw.label}</span>
-                  {settings.readingWidth === rw.id }
                 </button>
               ))}
             </div>
@@ -302,15 +284,12 @@ export default function AccessibilityPanel({
         </div>
       </section>
 
-      {/* SECTION 4: Interaction */}
       <section className="space-y-3 pt-4 border-t border-current/10" id="acc-sec-interaction" aria-labelledby="acc-sec-interaction-title">
         <div className="flex items-center gap-2 text-xs font-semibold opacity-70" id="acc-sec-interaction-title">
-          
           <span>4. Interaction & Motion</span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" id="acc-interaction-grid">
-          {/* Reduced Motion Toggle */}
           <div className="p-3.5 rounded-xl border border-current/20 bg-current/[0.02] flex items-center justify-between gap-3" id="acc-motion-box">
             <div className="space-y-0.5">
               <span className="text-xs font-medium block" id="acc-motion-lbl">Reduced motion</span>
@@ -324,16 +303,14 @@ export default function AccessibilityPanel({
               onClick={() => updateSetting('reducedMotion', !settings.reducedMotion, settings.reducedMotion ? 'Reduced motion disabled' : 'Reduced motion enabled')}
               className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg border cursor-pointer transition-all shrink-0 flex items-center gap-1.5 ${
                 settings.reducedMotion
-                  ? 'bg-current text-background border-current shadow-xs'
+                  ? 'bg-[#1B0A3B] text-white border-[#1B0A3B] shadow-xs'
                   : 'border-current/30 hover:border-current/60 opacity-80'
               }`}
             >
               <span>{settings.reducedMotion ? 'On' : 'Off'}</span>
-              
             </button>
           </div>
 
-          {/* Enhanced Focus Indicators */}
           <div className="p-3.5 rounded-xl border border-current/20 bg-current/[0.02] flex items-center justify-between gap-3" id="acc-focus-box">
             <div className="space-y-0.5">
               <span className="text-xs font-medium block" id="acc-focus-lbl">Enhanced focus indicators</span>
@@ -347,28 +324,25 @@ export default function AccessibilityPanel({
               onClick={() => updateSetting('enhancedFocus', !settings.enhancedFocus, settings.enhancedFocus ? 'Enhanced focus ring disabled' : 'Enhanced focus ring enabled')}
               className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg border cursor-pointer transition-all shrink-0 flex items-center gap-1.5 ${
                 settings.enhancedFocus
-                  ? 'bg-current text-background border-current shadow-xs'
+                  ? 'bg-[#1B0A3B] text-white border-[#1B0A3B] shadow-xs'
                   : 'border-current/30 hover:border-current/60 opacity-80'
               }`}
             >
               <span>{settings.enhancedFocus ? 'On' : 'Off'}</span>
-              
             </button>
           </div>
         </div>
 
-        {/* Audio & Time Format Row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2" id="acc-extra-interaction-row">
           <div className="p-3 rounded-xl border border-current/15 flex items-center justify-between gap-2">
             <span className="text-xs font-medium flex items-center gap-2">
-              {settings.soundEnabled ? null : null}
               Sound feedback
             </span>
             <button
               id="acc-toggle-sound"
               onClick={() => updateSetting('soundEnabled', !settings.soundEnabled, settings.soundEnabled ? 'Audio feedback muted' : 'Audio feedback enabled')}
               className={`px-3 py-1 text-xs rounded-md border font-medium cursor-pointer ${
-                settings.soundEnabled ? 'bg-current text-background border-current' : 'border-current/25 opacity-70'
+                settings.soundEnabled ? 'bg-[#1B0A3B] text-white border-[#1B0A3B]' : 'border-current/25 opacity-70'
               }`}
             >
               {settings.soundEnabled ? 'Enabled' : 'Muted'}
@@ -384,7 +358,7 @@ export default function AccessibilityPanel({
                   id={`acc-density-${density}`}
                   onClick={() => updateSetting('interfaceDensity', density, `Density set to ${density}`)}
                   className={`px-3 py-2 min-h-[36px] text-xs rounded-md border font-medium cursor-pointer capitalize ${
-                    settings.interfaceDensity === density ? 'bg-current text-background border-current' : 'border-current/20 opacity-70'
+                    settings.interfaceDensity === density ? 'bg-[#1B0A3B] text-white border-[#1B0A3B]' : 'border-current/20 opacity-70'
                   }`}
                 >
                   {density === 'spacious' ? 'Spacious' : 'Compact'}
@@ -395,7 +369,6 @@ export default function AccessibilityPanel({
         </div>
       </section>
 
-      {/* SECTION 5: Reset */}
       <section className="pt-4 border-t border-current/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4" id="acc-sec-reset">
         <div className="space-y-0.5">
           <h4 className="text-xs font-semibold opacity-80" id="acc-reset-title">
@@ -412,16 +385,13 @@ export default function AccessibilityPanel({
           className="px-4 py-2.5 min-h-[44px] rounded-xl border border-current/30 text-current hover:bg-current/[0.04] text-xs font-semibold flex items-center gap-2 cursor-pointer transition-colors focus-visible:ring-2 focus-visible:ring-[#912A4A]"
           aria-label="Restore default accessibility settings"
         >
-          
           <span>Reset to default settings</span>
         </button>
       </section>
 
-      {/* Optional Workspace Modules Filter */}
       {appModules.length > 0 && (
         <section className="pt-4 border-t border-current/10 space-y-2" id="acc-sec-modules">
           <h4 className="text-xs font-semibold opacity-70 flex items-center gap-1.5">
-            
             Workspace modules
           </h4>
           <p className="text-xs opacity-75">
@@ -438,11 +408,10 @@ export default function AccessibilityPanel({
                   onClick={() => toggleModule(moduleName)}
                   className={`px-4 py-2 min-h-[44px] text-xs rounded-full border transition-all flex items-center gap-1.5 cursor-pointer ${
                     isChecked
-                      ? 'bg-current text-background border-current font-semibold'
+                      ? 'bg-[#1B0A3B] text-white border-[#1B0A3B] font-semibold'
                       : 'border-current/25 opacity-60 hover:opacity-100'
                   }`}
                 >
-                  {isChecked }
                   <span>{moduleName}</span>
                 </button>
               );
