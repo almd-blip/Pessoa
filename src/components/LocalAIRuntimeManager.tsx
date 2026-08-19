@@ -240,11 +240,6 @@ export default function LocalAIRuntimeManager({ onConfigSaved, compact = false }
         )}
       </div>
 
-      <div className="space-y-6">
-        <SectionHeader title="Guidance & privacy" description="Choose how Pessoa should support your work and handle evidence, citations and uncertainty." open={openSection === 'guidance'} onToggle={() => toggleSection('guidance')} />
-        {openSection === 'guidance' && <div className="pt-2"><div className="flex items-start gap-3"><Shield className="w-5 h-5 text-[#912A4A] shrink-0 mt-0.5" /><div className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed"><p className="font-semibold text-[#1B0A3B] dark:text-stone-100">Privacy and guidance</p><p className="mt-1">Pessoa can help protect your voice, use citations carefully, and tell you when something cannot be verified.</p></div></div></div>}
-      </div>
-
       <form onSubmit={handleSave} className="flex flex-wrap items-center gap-3 pt-2">
         <button type="submit" className="min-h-11 font-sans text-sm bg-[#912A4A] hover:bg-[#78223d] text-white font-semibold px-5 py-2.5 rounded-xl transition-colors cursor-pointer">Apply & Save AI Configuration</button>
         {saveSuccess && <span className="text-sm font-semibold text-[#1D9E75] flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4" />Settings saved successfully.</span>}
