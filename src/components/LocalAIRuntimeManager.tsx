@@ -16,7 +16,7 @@ import {
   testLocalAIConnection,
 } from '../lib/localAiService';
 import { WEBL_MODELS, checkWebGPUSupport, getOrInitWebLLMEngine } from '../lib/webLlmService';
-import { CheckCircle2, ChevronDown, ChevronUp, Shield, Zap } from 'lucide-react';
+import { CheckCircle2, ChevronDown, ChevronUp, Shield } from 'lucide-react';
 
 interface LocalAIRuntimeManagerProps {
   onConfigSaved?: (config: LocalAIConfig) => void;
@@ -28,7 +28,7 @@ type SettingsSection = 'beginner' | 'intermediate' | 'advanced' | 'guidance';
 
 function SectionHeader({ title, description, open, onToggle }: { title: string; description: string; open: boolean; onToggle: () => void }) {
   return (
-    <button type="button" onClick={onToggle} aria-expanded={open} className="w-full min-h-11 text-left flex items-center justify-between gap-4 py-3.5 px-4 sm:px-5 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 hover:bg-stone-50 dark:hover:bg-stone-900 transition-colors">
+    <button type="button" onClick={onToggle} aria-expanded={open} className="w-full min-h-11 text-left flex items-center justify-between gap-4 py-3.5 border-b border-stone-200 dark:border-stone-800 hover:bg-stone-50/50 dark:hover:bg-stone-900/30 transition-colors">
       <span className="min-w-0">
         <span className="block text-base font-semibold text-[#1B0A3B] dark:text-stone-100 leading-snug">{title}</span>
         <span className="block mt-1 text-sm text-stone-600 dark:text-stone-400 leading-relaxed">{description}</span>
@@ -126,41 +126,42 @@ export default function LocalAIRuntimeManager({ onConfigSaved, compact = false }
       <div className="space-y-3">
         <SectionHeader title="Beginner — Use AI in your browser" description="No AI app to install. Pessoa runs the AI model directly on this device." open={openSection === 'beginner'} onToggle={() => toggleSection('beginner')} />
         {openSection === 'beginner' && (
-          <div className="space-y-5 pl-0 sm:pl-2">
-            <div className="space-y-5 rounded-xl border border-stone-200/80 dark:border-stone-800 bg-white dark:bg-stone-950 p-4 sm:p-5">
-              <Step number={1} title="Check your browser">
-                <p>Pessoa checks whether your browser can use WebGPU, which lets the AI model run on your device.</p>
-                {webGpuStatus && <div className={`mt-3 rounded-lg border px-3.5 py-3 ${webGpuStatus.supported ? 'border-[#1D9E75]/30 bg-[#1D9E75]/5' : 'border-amber-300/60 bg-amber-50/50 dark:bg-amber-950/20'}`}><strong>{webGpuStatus.supported ? '✓ Browser support: ready' : 'Browser support: not available'}</strong>{webGpuStatus.adapterName && ` — ${webGpuStatus.adapterName}`}{!webGpuStatus.supported && webGpuStatus.reason && <span className="block mt-1">{webGpuStatus.reason}</span>}</div>}
-              </Step>
+          <div className="space-y-6 pt-2">
+            <Step number={1} title="Check your browser">
+              <p>Pessoa checks whether your browser can use <strong>WebGPU</strong>, the technology that lets the AI model run on your device.</p>
+              {webGpuStatus && <p className={`mt-3 font-semibold ${webGpuStatus.supported ? 'text-[#1D9E75]' : 'text-amber-700 dark:text-amber-300'}`}><strong>{webGpuStatus.supported ? '✓ Browser ready' : 'Browser not ready'}</strong>{!webGpuStatus.supported && webGpuStatus.reason ? ` — ${webGpuStatus.reason}` : ''}</p>}
+            </Step>
 
-              <Step number={2} title="Choose a model">
-                <p className="mb-3">Not sure? Start with the recommended model. Smaller models use less space; larger models may be better for more demanding work.</p>
-                <div className="space-y-2">
-                  {WEBL_MODELS.map((model) => {
-                    const selected = config.provider === 'webllm' && config.model === model.id;
-                    return (
-                      <button key={model.id} type="button" onClick={() => { handleProviderSelect('webllm'); handleModelSelect(model.id); }} className={`w-full min-h-11 text-left rounded-lg border px-3.5 py-3 transition-colors ${selected ? 'border-[#1D9E75] bg-[#1D9E75]/5' : 'border-stone-200 dark:border-stone-800 hover:bg-stone-50 dark:hover:bg-stone-900'}`}>
-                        <div className="flex flex-wrap items-center justify-between gap-2"><span className="text-sm font-semibold text-[#1B0A3B] dark:text-stone-100">{model.name}</span><span className="text-xs text-stone-500">{model.size}</span></div>
-                        <p className="mt-1 text-sm text-stone-600 dark:text-stone-400 leading-relaxed">{model.description}</p>
-                        <p className="mt-1 text-xs text-stone-500">{model.recommendedFor}</p>
-                      </button>
-                    );
-                  })}
-                </div>
-              </Step>
+            <Step number={2} title="Choose a model">
+              <p className="mb-4">Not sure? Start with the recommended model. Smaller models use less space; larger models may be better for more demanding work.</p>
+              <div className="space-y-5">
+                {WEBL_MODELS.map((model, index) => {
+                  const selected = config.provider === 'webllm' && config.model === model.id;
+                  return (
+                    <div key={model.id} className="text-left">
+                      <div className="flex flex-wrap items-baseline justify-between gap-2">
+                        <p className="text-sm font-semibold text-[#1B0A3B] dark:text-stone-100">{index === 0 ? 'Recommended: ' : ''}{model.name}</p>
+                        <span className="text-xs text-stone-500">{model.size}</span>
+                      </div>
+                      <p className="mt-1 text-sm text-stone-600 dark:text-stone-400 leading-relaxed">{model.description}</p>
+                      <p className="mt-1 text-xs text-stone-500">{model.recommendedFor}</p>
+                      <button type="button" onClick={() => { handleProviderSelect('webllm'); handleModelSelect(model.id); handleDownloadModel(model.id); }} disabled={!webGpuStatus?.supported || !!downloadingModel} className={`mt-2 min-h-10 rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${selected ? 'bg-[#912A4A] text-white' : 'text-[#912A4A] border border-[#912A4A]/40 hover:bg-[#912A4A]/5'} disabled:opacity-50 disabled:cursor-not-allowed`}>{downloadingModel === model.id ? 'Downloading…' : 'Download'}</button>
+                    </div>
+                  );
+                })}
+              </div>
+            </Step>
 
-              <Step number={3} title="Download the model">
-                <p>You need internet access the first time. The model is saved on this device, so you do not have to download it every time.</p>
-                <p className="mt-1">Keep this page open while it downloads. The amount of data depends on the model you chose.</p>
-                <button type="button" disabled={!webGpuStatus?.supported || !config.model || !!downloadingModel} onClick={() => handleDownloadModel(config.model)} className="mt-3 min-h-11 rounded-xl bg-[#912A4A] px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed">{downloadingModel ? 'Downloading…' : 'Download this model'}</button>
-                {downloadProgress !== null && <div className="mt-3 space-y-2"><div className="h-2 overflow-hidden rounded-full bg-stone-200 dark:bg-stone-800"><div className="h-full bg-[#1D9E75] transition-all" style={{ width: `${downloadProgress}%` }} /></div><p className="text-sm">{downloadProgress}% — {downloadMessage}</p></div>}
-                {downloadProgress === 100 && !downloadingModel && <p className="mt-2 font-semibold text-[#1D9E75]">✓ Ready to use offline</p>}
-              </Step>
+            <Step number={3} title="Download the model">
+              <p>You need internet access the first time. The model is saved on this device, so you do not have to download it every time.</p>
+              <p className="mt-1">Keep this page open while it downloads. The amount of data depends on the model you chose.</p>
+              {downloadProgress !== null && <div className="mt-3 space-y-2"><div className="h-2 overflow-hidden rounded-full bg-stone-200 dark:bg-stone-800"><div className="h-full bg-[#1D9E75] transition-all" style={{ width: `${downloadProgress}%` }} /></div><p className="text-sm">{downloadProgress}% — {downloadMessage}</p></div>}
+              {downloadProgress === 100 && !downloadingModel && <p className="mt-2 font-semibold text-[#1D9E75]">✓ Download complete</p>}
+            </Step>
 
-              <Step number={4} title="You're ready">
-                <p>Pessoa can now use this model in your browser. When you use browser AI, processing happens on this device.</p>
-              </Step>
-            </div>
+            <Step number={4} title="You're ready">
+              <p>Pessoa can now use this model in your browser. When you use browser AI, processing happens on this device.</p>
+            </Step>
           </div>
         )}
       </div>
@@ -168,17 +169,17 @@ export default function LocalAIRuntimeManager({ onConfigSaved, compact = false }
       <div className="space-y-3">
         <SectionHeader title="Intermediate — Connect an AI app on your computer" description="Use an AI app such as Ollama or LM Studio. Pessoa will guide you through choosing, installing and connecting it." open={openSection === 'intermediate'} onToggle={() => toggleSection('intermediate')} />
         {openSection === 'intermediate' && (
-          <div className="space-y-4 pl-0 sm:pl-2">
+          <div className="space-y-4 pt-2">
             <p className="text-sm text-stone-600 dark:text-stone-400">Choose an app you already use, or choose one to get started. You do not need to understand the technical details.</p>
-            <div className="space-y-2">
+            <div className="space-y-5">
               {intermediateProviders.map((provider) => {
                 const preset = PROVIDER_PRESETS[provider];
                 const selected = config.provider === provider;
                 return (
-                  <div key={provider} className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 overflow-hidden">
-                    <button type="button" onClick={() => openProviderGuide(provider)} className="w-full min-h-11 text-left px-4 py-3.5 flex items-center justify-between gap-3 hover:bg-stone-50 dark:hover:bg-stone-900">
+                  <div key={provider}>
+                    <button type="button" onClick={() => openProviderGuide(provider)} className="w-full min-h-11 text-left flex items-center justify-between gap-3 py-2 hover:bg-stone-50/50 dark:hover:bg-stone-900/30">
                       <span className="min-w-0"><span className={`block text-sm font-semibold ${selected ? 'text-[#1D9E75]' : 'text-[#1B0A3B] dark:text-stone-100'}`}>{preset.name}</span><span className="block mt-1 text-sm text-stone-600 dark:text-stone-400 leading-relaxed">{preset.description}</span></span>
-                      {showGuideFor === provider ? <ChevronUp className="w-5 h-5 shrink-0" /> : <ChevronDown className="w-5 h-5 shrink-0" />}
+                      {showGuideFor === provider ? <ChevronUp className="w-5 h-5 shrink-0 text-[#1D9E75]" /> : <ChevronDown className="w-5 h-5 shrink-0 text-[#1D9E75]" />}
                     </button>
                     {showGuideFor === provider && <ProviderSetup provider={provider} meta={PROVIDER_INSTRUCTIONS[provider]} config={config} health={health} isTesting={isTesting} onTest={() => runHealthCheck(config)} onModelSelect={handleModelSelect} onConfigChange={setConfig} />}
                   </div>
@@ -192,7 +193,7 @@ export default function LocalAIRuntimeManager({ onConfigSaved, compact = false }
       <div className="space-y-3">
         <SectionHeader title="Advanced — Use your own server or cloud AI" description="Connect Pessoa to a private server or a cloud AI service you have already set up." open={openSection === 'advanced'} onToggle={() => toggleSection('advanced')} />
         {openSection === 'advanced' && (
-          <div className="space-y-4 pl-0 sm:pl-2">
+          <div className="space-y-4 pt-2">
             <p className="text-sm text-stone-600 dark:text-stone-400">Choose the kind of connection you have. Pessoa will then ask for only the information it needs.</p>
             {(['custom', 'gemini'] as LocalAIProvider[]).map((provider) => {
               const meta = PROVIDER_INSTRUCTIONS[provider];
@@ -200,10 +201,10 @@ export default function LocalAIRuntimeManager({ onConfigSaved, compact = false }
               const title = provider === 'custom' ? 'Private server' : 'Gemini Cloud API';
               const description = provider === 'custom' ? 'For vLLM, Text-Generation-WebUI, LocalAI, or another OpenAI-compatible server.' : 'Use Pessoa with the Gemini cloud service.';
               return (
-                <div key={provider} className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 overflow-hidden">
-                  <button type="button" onClick={() => openProviderGuide(provider)} className="w-full min-h-11 text-left px-4 py-3.5 flex items-center justify-between gap-3 hover:bg-stone-50 dark:hover:bg-stone-900">
+                <div key={provider}>
+                  <button type="button" onClick={() => openProviderGuide(provider)} className="w-full min-h-11 text-left flex items-center justify-between gap-3 py-2 hover:bg-stone-50/50 dark:hover:bg-stone-900/30">
                     <span className="min-w-0"><span className={`block text-sm font-semibold ${selected ? 'text-[#1D9E75]' : 'text-[#1B0A3B] dark:text-stone-100'}`}>{title}</span><span className="block mt-1 text-sm text-stone-600 dark:text-stone-400 leading-relaxed">{description}</span></span>
-                    {showGuideFor === provider ? <ChevronUp className="w-5 h-5 shrink-0" /> : <ChevronDown className="w-5 h-5 shrink-0" />}
+                    {showGuideFor === provider ? <ChevronUp className="w-5 h-5 shrink-0 text-[#1D9E75]" /> : <ChevronDown className="w-5 h-5 shrink-0 text-[#1D9E75]" />}
                   </button>
                   {showGuideFor === provider && <ProviderSetup provider={provider} meta={meta} config={config} health={health} isTesting={isTesting} onTest={() => runHealthCheck(config)} onModelSelect={handleModelSelect} onConfigChange={setConfig} />}
                 </div>
@@ -215,7 +216,7 @@ export default function LocalAIRuntimeManager({ onConfigSaved, compact = false }
 
       <div className="space-y-3">
         <SectionHeader title="Guidance & privacy" description="Choose how Pessoa should support your work and handle evidence, citations and uncertainty." open={openSection === 'guidance'} onToggle={() => toggleSection('guidance')} />
-        {openSection === 'guidance' && <div className="space-y-3 pl-0 sm:pl-2"><div className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 p-4 sm:p-5"><div className="flex items-start gap-3"><Shield className="w-5 h-5 text-[#912A4A] shrink-0 mt-0.5" /><div className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed"><p className="font-semibold text-[#1B0A3B] dark:text-stone-100">Privacy and guidance</p><p className="mt-1">Pessoa can help protect your voice, use citations carefully, and tell you when something cannot be verified.</p></div></div></div></div>}
+        {openSection === 'guidance' && <div className="pt-2"><div className="flex items-start gap-3"><Shield className="w-5 h-5 text-[#912A4A] shrink-0 mt-0.5" /><div className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed"><p className="font-semibold text-[#1B0A3B] dark:text-stone-100">Privacy and guidance</p><p className="mt-1">Pessoa can help protect your voice, use citations carefully, and tell you when something cannot be verified.</p></div></div></div>}
       </div>
 
       <form onSubmit={handleSave} className="flex flex-wrap items-center gap-3 pt-2">
@@ -237,18 +238,18 @@ function ProviderSetup({ provider, meta, config, health, isTesting, onTest, onMo
   onConfigChange: React.Dispatch<React.SetStateAction<LocalAIConfig>>;
 }) {
   return (
-    <div className="border-t border-stone-200 dark:border-stone-800 p-4 sm:p-5 space-y-5">
+    <div className="pt-4 space-y-5">
       <Step number={1} title={provider === 'gemini' ? 'Choose this service' : 'Install or open your AI app'}>
         <div className="space-y-2">{meta?.steps?.map((step: string, index: number) => <p key={index}>{step}</p>)}</div>
         {provider !== 'gemini' && <p className="mt-2">When you have finished installing or opening the app, come back here and continue.</p>}
       </Step>
 
       {provider !== 'gemini' && <Step number={2} title="Choose a model">
-        <label className="block font-semibold text-[#1B0A3B] dark:text-stone-100">AI model<select value={config.model} onChange={(e) => onModelSelect(e.target.value)} className="mt-1.5 w-full min-h-11 rounded-lg border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-950 px-3 text-sm font-normal">{OPEN_WEIGHT_MODELS.map((model) => <option key={model.id} value={model.id}>{model.name}</option>)}</select></label>
+        <label className="block font-semibold text-[#1B0A3B] dark:text-stone-100">AI model<select value={config.model} onChange={(e) => onModelSelect(e.target.value)} className="mt-1.5 w-full min-h-11 bg-transparent border-b border-stone-300 dark:border-stone-700 px-0 text-sm font-normal">{OPEN_WEIGHT_MODELS.map((model) => <option key={model.id} value={model.id}>{model.name}</option>)}</select></label>
       </Step>}
 
       <Step number={provider === 'gemini' ? 2 : 3} title="Connect Pessoa">
-        {provider !== 'gemini' && <label className="block font-semibold text-[#1B0A3B] dark:text-stone-100">Server address<input type="url" value={config.baseUrl} onChange={(e) => onConfigChange((prev) => ({ ...prev, baseUrl: e.target.value }))} className="mt-1.5 w-full min-h-11 rounded-lg border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-950 px-3 text-sm font-normal" /></label>}
+        {provider !== 'gemini' && <label className="block font-semibold text-[#1B0A3B] dark:text-stone-100">Server address<input type="url" value={config.baseUrl} onChange={(e) => onConfigChange((prev) => ({ ...prev, baseUrl: e.target.value }))} className="mt-1.5 w-full min-h-11 bg-transparent border-b border-stone-300 dark:border-stone-700 px-0 text-sm font-normal" /></label>}
         <button type="button" onClick={onTest} disabled={isTesting} className="mt-3 min-h-11 rounded-xl px-4 text-sm font-semibold border border-stone-300 dark:border-stone-700">{isTesting ? 'Checking…' : 'Test connection'}</button>
         <span className="ml-3 text-sm text-stone-600 dark:text-stone-400">{health.status}</span>
       </Step>
