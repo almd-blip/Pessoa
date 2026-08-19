@@ -3,7 +3,7 @@
 
 #second-thought-writing-studio > div:has(#desk-print-notes-btn) {
   display: grid !important;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  grid-template-columns: auto auto minmax(0, 1fr);
   grid-template-rows: auto auto;
   grid-template-areas:
     "title focus spacer"
@@ -18,8 +18,7 @@
   display: contents !important;
 }
 
-/* Row 1: title and Focus Mode sit on the same Y position, with Focus Mode
-   kept close to the title rather than pushed to the far edge. */
+/* Row 1: title and Focus Mode sit on the same Y position and remain close together. */
 #second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:first-child {
   grid-area: title;
   min-width: 0;
@@ -32,9 +31,7 @@
   margin: 0 !important;
 }
 
-/* Row 2: three deliberate positions — Project | Chapter | Print Notes.
-   The middle column is a real flexible column, so Chapter is genuinely
-   positioned between Project and Print Notes. */
+/* Row 2: Project | Chapter | Print Notes share one Y position. */
 #second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:nth-child(2) {
   grid-area: project;
   justify-self: start !important;
@@ -89,7 +86,7 @@
 /* Keep the same two-row hierarchy on tablet and mobile. */
 @media (max-width: 900px) {
   #second-thought-writing-studio > div:has(#desk-print-notes-btn) {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+    grid-template-columns: auto auto minmax(0, 1fr);
     grid-template-areas:
       "title focus spacer"
       "project chapter print";
@@ -106,7 +103,7 @@
 
 @media (max-width: 600px) {
   #second-thought-writing-studio > div:has(#desk-print-notes-btn) {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+    grid-template-columns: auto auto minmax(0, 1fr);
     column-gap: 0.35rem;
   }
 }
