@@ -55,6 +55,7 @@ export default function LocalAIRuntimeManager({ onConfigSaved, compact = false }
   const [webGpuStatus, setWebGpuStatus] = useState<{ supported: boolean; adapterName?: string; reason?: string } | null>(null);
   const [openSection, setOpenSection] = useState<SettingsSection | null>('beginner');
   const [showGuideFor, setShowGuideFor] = useState<LocalAIProvider | null>(null);
+  const [showAllModels, setShowAllModels] = useState(false);
   const [downloadingModel, setDownloadingModel] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
   const [downloadMessage, setDownloadMessage] = useState('');
@@ -84,7 +85,13 @@ export default function LocalAIRuntimeManager({ onConfigSaved, compact = false }
   const handleModelSelect = (modelName: string) => setConfig((prev) => ({ ...prev, model: modelName }));
 
   const handleDownloadModel = async (modelId: string) => {
-    if (!webGpuStatus?.supported || downloadingModel) return;
+    if (downloadingModel) return;
+    if (!webGpuStatus?.supported) {
+      setDownloadProgress(null);
+      setDownloadMessage(webGpuStatus?.reason || 'Your browser is not ready to run browser AI.');
+      return;
+    }
+
     setConfig((prev) => ({ ...prev, provider: 'webllm', model: modelId, enabled: true }));
     setDownloadingModel(modelId);
     setDownloadProgress(0);
@@ -116,6 +123,9 @@ export default function LocalAIRuntimeManager({ onConfigSaved, compact = false }
   const toggleSection = (section: SettingsSection) => setOpenSection((current) => (current === section ? null : section));
   const openProviderGuide = (provider: LocalAIProvider) => { handleProviderSelect(provider); setShowGuideFor(provider); };
 
+  const selectedWebModel = WEBL_MODELS.find((model) => model.id === config.model) || WEBL_MODELS.find((model) => model.isDefault) || WEBL_MODELS[0];
+  const additionalWebModels = WEBL_MODELS.filter((model) => model.id !== selectedWebModel.id);
+
   return (
     <div className="space-y-4 font-sans text-left" id="local-ai-runtime-manager">
       <div className="space-y-1 text-left">
@@ -133,23 +143,35 @@ export default function LocalAIRuntimeManager({ onConfigSaved, compact = false }
             </Step>
 
             <Step number={2} title="Choose a model">
-              <p className="mb-4">Not sure? Start with the recommended model. Smaller models use less space; larger models may be better for more demanding work.</p>
-              <div className="space-y-5">
-                {WEBL_MODELS.map((model, index) => {
-                  const selected = config.provider === 'webllm' && config.model === model.id;
-                  return (
-                    <div key={model.id} className="text-left">
-                      <div className="flex flex-wrap items-baseline justify-between gap-2">
-                        <p className="text-sm font-semibold text-[#1B0A3B] dark:text-stone-100">{index === 0 ? 'Recommended: ' : ''}{model.name}</p>
-                        <span className="text-xs text-stone-500">{model.size}</span>
-                      </div>
-                      <p className="mt-1 text-sm text-stone-600 dark:text-stone-400 leading-relaxed">{model.description}</p>
-                      <p className="mt-1 text-xs text-stone-500">{model.recommendedFor}</p>
-                      <button type="button" onClick={() => { handleProviderSelect('webllm'); handleModelSelect(model.id); handleDownloadModel(model.id); }} disabled={!webGpuStatus?.supported || !!downloadingModel} className={`mt-2 min-h-10 rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${selected ? 'bg-[#912A4A] text-white' : 'text-[#912A4A] border border-[#912A4A]/40 hover:bg-[#912A4A]/5'} disabled:opacity-50 disabled:cursor-not-allowed`}>{downloadingModel === model.id ? 'Downloading…' : 'Download'}</button>
-                    </div>
-                  );
-                })}
+              <p>Not sure? Start with the recommended model. Smaller models use less space; larger models may be better for more demanding work.</p>
+
+              <div className="mt-4">
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <p className="text-sm font-semibold text-[#1B0A3B] dark:text-stone-100">{selectedWebModel.isDefault ? 'Recommended: ' : ''}{selectedWebModel.name}</p>
+                  <span className="text-xs text-stone-500">{selectedWebModel.size}</span>
+                </div>
+                <p className="mt-1 text-sm text-stone-600 dark:text-stone-400 leading-relaxed">{selectedWebModel.description}</p>
+                <p className="mt-1 text-xs text-stone-500">{selectedWebModel.recommendedFor}</p>
+                <button type="button" onClick={() => handleDownloadModel(selectedWebModel.id)} disabled={!!downloadingModel} className="mt-3 min-h-11 rounded-xl bg-[#912A4A] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#78223d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{downloadingModel === selectedWebModel.id ? 'Downloading…' : 'Download this model'}</button>
               </div>
+
+              <button type="button" onClick={() => setShowAllModels((open) => !open)} className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#1B0A3B] dark:text-stone-100 hover:text-[#912A4A]">
+                {showAllModels ? 'Hide other models' : 'Choose a different model'}
+                {showAllModels ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </button>
+
+              {showAllModels && (
+                <div className="mt-4 space-y-4 border-l-2 border-stone-200 dark:border-stone-800 pl-4">
+                  {additionalWebModels.map((model) => (
+                    <button key={model.id} type="button" onClick={() => { handleModelSelect(model.id); setShowAllModels(false); setDownloadProgress(null); setDownloadMessage(''); }} className="block w-full text-left py-1 hover:text-[#912A4A]">
+                      <span className="block text-sm font-semibold text-[#1B0A3B] dark:text-stone-100">{model.name}</span>
+                      <span className="block mt-1 text-xs text-stone-500">{model.size} · {model.recommendedFor}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {downloadMessage && <p className={`mt-3 text-sm leading-relaxed ${downloadProgress === 100 ? 'font-semibold text-[#1D9E75]' : 'text-stone-600 dark:text-stone-400'}`}>{downloadProgress === 100 ? '✓ ' : ''}{downloadMessage}</p>}
             </Step>
 
             <Step number={3} title="Download the model">
