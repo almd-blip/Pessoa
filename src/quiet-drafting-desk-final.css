@@ -3,14 +3,16 @@
 
 #second-thought-writing-studio > div:has(#desk-print-notes-btn) {
   display: grid !important;
-  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  grid-template-columns: max-content max-content max-content max-content;
   grid-template-rows: auto auto;
   grid-template-areas:
-    "title focus spacer spacer"
+    "title focus focus focus"
     "project chapter create notes";
   align-items: center !important;
+  justify-content: start !important;
   column-gap: 0.75rem;
   row-gap: 0.65rem;
+  width: 100%;
 }
 
 /* Existing wrapper elements become transparent to the grid. */
@@ -19,7 +21,7 @@
   display: contents !important;
 }
 
-/* Row 1: Quiet Drafting Desk + Focus Mode, same Y position and close together. */
+/* Row 1: Quiet Drafting Desk + Focus Mode, same Y position and genuinely close together. */
 #second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:first-child {
   grid-area: title;
   align-self: center !important;
@@ -35,7 +37,7 @@
   margin: 0 !important;
 }
 
-/* Row 2: Project | Chapter | + Create New Project | Print Notes, same Y position. */
+/* Row 2: Project | Chapter | + Create New Project | Print Notes, all sharing one Y position. */
 #second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:nth-child(2) {
   grid-area: project;
   align-self: center !important;
@@ -104,12 +106,13 @@
 
 @media (max-width: 900px) {
   #second-thought-writing-studio > div:has(#desk-print-notes-btn) {
-    grid-template-columns: auto auto minmax(0, 1fr) auto;
+    grid-template-columns: max-content max-content max-content max-content;
     grid-template-areas:
-      "title focus spacer spacer"
+      "title focus focus focus"
       "project chapter create notes";
     column-gap: 0.5rem;
     row-gap: 0.6rem;
+    overflow-x: auto;
   }
 
   #second-thought-writing-studio > div:has(#desk-print-notes-btn) > div:first-child > div:nth-child(2),
@@ -121,7 +124,6 @@
 
 @media (max-width: 600px) {
   #second-thought-writing-studio > div:has(#desk-print-notes-btn) {
-    grid-template-columns: auto auto minmax(0, 1fr) auto;
     column-gap: 0.35rem;
   }
 }
