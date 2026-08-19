@@ -24,13 +24,14 @@ export default function GuidedAISetup() {
   };
 
   const route = useMemo(() => {
-    if (device !== 'android') return 'browser';
-    if (androidVersion === 'older') return 'app';
-    if (androidVersion === '12plus') return 'browser';
-    return 'unknown';
-  }, [device, androidVersion]);
-
-  const showTechnicalDetail = expertise === 'advanced';
+    if (device === 'android') {
+      if (androidVersion === 'older') return 'app';
+      if (androidVersion === '12plus') return 'browser';
+      return 'unknown';
+    }
+    if (device === 'windows') return `windows-${expertise || 'beginner'}`;
+    return 'browser';
+  }, [device, androidVersion, expertise]);
 
   return (
     <div className="w-full space-y-8 text-left font-sans">
@@ -106,9 +107,23 @@ export default function GuidedAISetup() {
           {route === 'app' ? (
             <>
               <SetupStep number={1} title="Install an AI app"><p>Use <strong>PocketPal AI</strong> or <strong>Maid</strong>.</p><p className="mt-1">These are options for older Android devices that cannot use browser AI.</p></SetupStep>
-              <SetupStep number={2} title="Choose a small model"><p><strong>Qwen 2.5 0.5B-Instruct</strong> — about 380 MB</p><p className="mt-1"><strong>SmolLM2 360M</strong> — a very small model for low-memory devices.</p>{showTechnicalDetail && <p className="mt-2 text-xs text-stone-500">For more technical users, Qwen 2.5 0.5B-Instruct (Q4_K_M) is designed for low-memory mobile use.</p>}</SetupStep>
+              <SetupStep number={2} title="Choose a small model"><p><strong>Qwen 2.5 0.5B-Instruct</strong> — about 380 MB</p><p className="mt-1"><strong>SmolLM2 360M</strong> — a very small model for low-memory devices.</p></SetupStep>
               <SetupStep number={3} title="Download the model"><p>You'll need internet for the first download. The model stays on your device afterwards.</p></SetupStep>
               <SetupStep number={4} title="Connect Pessoa"><p>Once your AI app and model are ready, use its local connection details to connect Pessoa.</p></SetupStep>
+            </>
+          ) : route === 'windows-intermediate' ? (
+            <>
+              <SetupStep number={1} title="Choose how you want to run AI"><p>For a Windows computer, you can use a local AI app such as <strong>Ollama</strong> or <strong>LM Studio</strong>.</p></SetupStep>
+              <SetupStep number={2} title="Install your AI app"><p>Install the app you choose and follow its setup instructions.</p></SetupStep>
+              <SetupStep number={3} title="Choose and download a model"><p>Choose a model that your computer can run comfortably. Start with a smaller model if you are unsure.</p></SetupStep>
+              <SetupStep number={4} title="Connect Pessoa"><p>Use the connection details provided by your AI app to connect Pessoa.</p></SetupStep>
+            </>
+          ) : route === 'windows-advanced' ? (
+            <>
+              <SetupStep number={1} title="Choose your local AI setup"><p>On Windows, you can use <strong>Ollama</strong>, <strong>LM Studio</strong>, or another compatible local AI service.</p></SetupStep>
+              <SetupStep number={2} title="Choose your model and runtime"><p>Select a model appropriate for your available memory and processing hardware, then configure your chosen runtime.</p></SetupStep>
+              <SetupStep number={3} title="Start the local service"><p>Start the model service and confirm the local endpoint supplied by your AI application.</p></SetupStep>
+              <SetupStep number={4} title="Connect Pessoa"><p>Enter the local connection details in Pessoa and test the connection.</p></SetupStep>
             </>
           ) : (
             <>
@@ -120,7 +135,6 @@ export default function GuidedAISetup() {
           )}
 
           {expertise !== 'beginner' && <div className="pt-2 text-sm text-stone-600 dark:text-stone-400">You can explore more AI connection options below if you want more control.</div>}
-
           <button type="button" onClick={reset} className="text-sm font-semibold hover:underline" style={{ color: indigo }}>Change my answers</button>
         </div>
       )}
