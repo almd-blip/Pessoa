@@ -101,9 +101,6 @@ let activeEngine: MLCEngine | null = null;
 let currentLoadedModelId: string | null = null;
 let isInitializing = false;
 
-/**
- * Check if the current browser environment supports WebGPU.
- */
 export async function checkWebGPUSupport(): Promise<WebGPUCapability> {
   const nav = typeof navigator !== 'undefined' ? (navigator as any) : null;
   if (!nav || !nav.gpu) {
@@ -112,33 +109,43 @@ export async function checkWebGPUSupport(): Promise<WebGPUCapability> {
       reason: 'WebGPU is not supported or enabled in this browser (Chrome 113+, Edge 113+, Firefox 115+, Safari 18+ required).',
     };
   }
-
   try {
     const adapter = await nav.gpu.requestAdapter();
     if (!adapter) {
-      return {
-        supported: false,
-        reason: 'No compatible WebGPU graphics adapter found. Check hardware acceleration settings.',
-      };
+      return { supported: false, reason: 'No compatible WebGPU graphics adapter found. Check hardware acceleration settings.' };
     }
     const info = (await (adapter as any).requestAdapterInfo?.()) || {};
-    return {
-      supported: true,
-      adapterName: info.description || info.vendor || 'Standard WebGPU Adapter',
-    };
+    return { supported: true, adapterName: info.description || info.vendor || 'Standard WebGPU Adapter' };
   } catch (err: any) {
-    return {
-      supported: false,
-      reason: err?.message || 'Failed to initialize WebGPU adapter.',
-    };
+    return { supported: false, reason: err?.message || 'Failed to initialize WebGPU adapter.' };
   }
 }
 
 /**
- * Get the singleton MLCEngine or initialize one.
- * Model IDs are normalized against WebLLM's prebuilt model registry so that
- * display labels cannot accidentally use a different casing from the runtime ID.
+ * Create the WebLLM app configuration with the model weights routed through
+ * Pessoa's same-origin proxy. Hugging Face resolver/CDN responses can otherwise
+ * fail browser CORS checks before WebLLM can initialise the model.
  */
+function getBrowserAIAppConfig(registeredModel: any) {
+  const modelUrl = registeredModel.model as string;
+  if (typeof window === 'undefined' || !modelUrl?.startsWith('https://huggingface.co/')) {
+    return prebuiltAppConfig;
+  }
+
+  const repoPath = new URL(modelUrl).pathname;
+  const proxiedModelUrl = `${window.location.origin}/api/browser-ai/model${repoPath}`;
+
+  return {
+    ...prebuiltAppConfig,
+    model_list: [
+      {
+        ...registeredModel,
+        model: proxiedModelUrl,
+      },
+    ],
+  };
+}
+
 export async function getOrInitWebLLMEngine(
   modelId: string = 'Qwen2.5-3B-Instruct-q4f16_1-MLC',
   onProgress?: (report: InitProgressReport) => void
@@ -151,18 +158,11 @@ export async function getOrInitWebLLMEngine(
   if (!registeredModel) {
     throw new Error(`The selected browser AI model is not available in this WebLLM build: ${modelId}`);
   }
-
-  if (activeEngine && currentLoadedModelId === canonicalModelId) {
-    return activeEngine;
-  }
+  if (activeEngine && currentLoadedModelId === canonicalModelId) return activeEngine;
 
   if (isInitializing) {
-    while (isInitializing) {
-      await new Promise((resolve) => setTimeout(resolve, 300));
-    }
-    if (activeEngine && currentLoadedModelId === canonicalModelId) {
-      return activeEngine;
-    }
+    while (isInitializing) await new Promise((resolve) => setTimeout(resolve, 300));
+    if (activeEngine && currentLoadedModelId === canonicalModelId) return activeEngine;
   }
 
   isInitializing = true;
@@ -177,7 +177,9 @@ export async function getOrInitWebLLMEngine(
       currentLoadedModelId = null;
     }
 
+    const appConfig = getBrowserAIAppConfig(registeredModel);
     const engine = await CreateMLCEngine(canonicalModelId, {
+      appConfig,
       initProgressCallback: (report) => {
         if (onProgress) onProgress(report);
       },
@@ -191,25 +193,13 @@ export async function getOrInitWebLLMEngine(
   }
 }
 
-/**
- * Clean & resilient JSON extractor to handle smaller open-weight models that might
- * wrap JSON in markdown blocks or include conversational greetings.
- */
 export function safeExtractJson<T = any>(rawText: string): T {
   if (!rawText) return {} as T;
-
-  let clean = rawText
-    .replace(/^```json/gim, '')
-    .replace(/^```/gim, '')
-    .replace(/```$/gim, '')
-    .trim();
-
+  let clean = rawText.replace(/^```json/gim, '').replace(/^```/gim, '').replace(/```$/gim, '').trim();
   const firstBrace = clean.indexOf('{');
   const firstBracket = clean.indexOf('[');
-  
   let startIdx = -1;
   let isObject = true;
-
   if (firstBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket)) {
     startIdx = firstBrace;
     isObject = true;
@@ -217,33 +207,22 @@ export function safeExtractJson<T = any>(rawText: string): T {
     startIdx = firstBracket;
     isObject = false;
   }
-
   if (startIdx !== -1) {
     const lastChar = isObject ? '}' : ']';
     const endIdx = clean.lastIndexOf(lastChar);
-    if (endIdx > startIdx) {
-      clean = clean.substring(startIdx, endIdx + 1);
-    }
+    if (endIdx > startIdx) clean = clean.substring(startIdx, endIdx + 1);
   }
-
   try {
     return JSON.parse(clean);
   } catch {
     try {
-      const repaired = clean
-        .replace(/,\s*([}\]])/g, '$1')
-        .replace(/[\n\r\t]/g, ' ');
-      return JSON.parse(repaired);
-    } catch (parseErr) {
-      console.warn('Failed to parse model output as JSON:', rawText);
+      return JSON.parse(clean.replace(/,\s*([}\]])/g, '$1').replace(/[\n\r\t]/g, ' '));
+    } catch {
       throw new Error(`Model returned text that could not be parsed as structured JSON: ${rawText.slice(0, 150)}...`);
     }
   }
 }
 
-/**
- * Run in-browser inference using WebLLM.
- */
 export async function executeWebLLMPrompt(
   systemPrompt: string,
   userPrompt: string,
@@ -252,30 +231,16 @@ export async function executeWebLLMPrompt(
   onProgress?: (progress: number, text: string) => void
 ): Promise<any> {
   const engine = await getOrInitWebLLMEngine(modelId, (report) => {
-    if (onProgress) {
-      onProgress(report.progress, report.text);
-    }
+    if (onProgress) onProgress(report.progress, report.text);
   });
-
   const response = await engine.chat.completions.create({
     messages: [
-      {
-        role: 'system',
-        content: jsonMode
-          ? `${systemPrompt}\n\nIMPORTANT: You must respond ONLY with raw, valid JSON. No conversational chatter, no preambles, no explanation outside JSON.`
-          : systemPrompt,
-      },
+      { role: 'system', content: jsonMode ? `${systemPrompt}\n\nIMPORTANT: You must respond ONLY with raw, valid JSON. No conversational chatter, no preambles, no explanation outside JSON.` : systemPrompt },
       { role: 'user', content: userPrompt },
     ],
     temperature: 0.15,
     response_format: jsonMode ? { type: 'json_object' } : undefined,
   });
-
   const outputText = response.choices[0]?.message?.content || '';
-
-  if (jsonMode) {
-    return safeExtractJson(outputText);
-  }
-
-  return outputText;
+  return jsonMode ? safeExtractJson(outputText) : outputText;
 }
