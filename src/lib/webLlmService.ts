@@ -17,6 +17,46 @@ export interface WebLLMModelOption {
 
 export const WEBL_MODELS: WebLLMModelOption[] = [
   {
+    id: 'SmolLM2-360M-Instruct-q4f16_1-MLC',
+    name: 'SmolLM2 360M (Ultra-Light)',
+    size: '~207 MB',
+    memoryReq: '1 GB+ RAM / GPU',
+    description: 'Smallest footprint model for quick browser testing.',
+    recommendedFor: 'Good for less powerful devices and quick testing.',
+  },
+  {
+    id: 'Qwen2.5-0.5B-Instruct-q4f16_1-MLC',
+    name: 'Qwen 2.5 0.5B (Ultra-Light)',
+    size: '~290 MB',
+    memoryReq: '1 GB+ RAM / GPU',
+    description: 'Very small model for devices with limited storage and memory.',
+    recommendedFor: 'Good for low-storage PCs and lower-memory devices.',
+  },
+  {
+    id: 'Llama-3.2-1B-Instruct-q4f16_1-MLC',
+    name: 'Meta Llama 3.2 1B (Lightweight)',
+    size: '~700 MB',
+    memoryReq: '2 GB+ RAM / GPU',
+    description: 'Small general-purpose conversational model.',
+    recommendedFor: 'Good for modest PCs and devices with limited memory.',
+  },
+  {
+    id: 'Qwen2.5-1.5B-Instruct-q4f16_1-MLC',
+    name: 'Qwen 2.5 1.5B (Balanced)',
+    size: '~880 MB',
+    memoryReq: '3 GB+ RAM / GPU',
+    description: 'Balanced option for everyday browser AI.',
+    recommendedFor: 'Good balance of capability and resource use.',
+  },
+  {
+    id: 'SmolLM2-1.7B-Instruct-q4f16_1-MLC',
+    name: 'SmolLM2 1.7B (Ultra-Light)',
+    size: '~1.0 GB',
+    memoryReq: '2 GB+ RAM / GPU',
+    description: 'Small footprint model for quick browser testing.',
+    recommendedFor: 'Good for less powerful devices and quick testing.',
+  },
+  {
     id: 'Qwen2.5-3B-Instruct-q4f16_1-MLC',
     name: 'Qwen 2.5 3B (Fast & High Precision)',
     size: '~1.9 GB',
@@ -24,14 +64,6 @@ export const WEBL_MODELS: WebLLMModelOption[] = [
     description: '',
     recommendedFor: 'Best all-rounder for phones, laptops, and quick in-browser inference',
     isDefault: true,
-  },
-  {
-    id: 'SmolLM2-1.7B-Instruct-q4f16_1-MLC',
-    name: 'SmolLM2 1.7B (Ultra-Light)',
-    size: '~1.0 GB',
-    memoryReq: '2 GB+ RAM / GPU',
-    description: 'Smallest footprint model for quick browser testing.',
-    recommendedFor: 'Good for less powerful devices and quick testing.',
   },
   {
     id: 'gemma-2-2b-it-q4f16_1-MLC',
