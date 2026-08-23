@@ -42,8 +42,6 @@ export default function GuidedAISetup() {
       if (androidVersion === '12plus' || androidVersion === 'unknown') return 'browser';
       return 'unknown';
     }
-    // Windows, Mac, iPhone/iPad and other devices first try the simple browser route.
-    // If WebGPU is unavailable, the result screen gives the appropriate local-app alternative.
     return 'browser';
   }, [device, androidVersion]);
 
@@ -162,10 +160,10 @@ export default function GuidedAISetup() {
 
           {route === 'app' ? (
             <>
-              <SetupStep number={1} title="Install an AI app"><p>Use <strong>PocketPal AI</strong> or <strong>Maid</strong>.</p><p className="mt-1">These are options for older Android devices that cannot use browser AI.</p></SetupStep>
+              <SetupStep number={1} title="Use an AI app on your phone"><p>Try <strong>PocketPal AI</strong> or <strong>Maid</strong>.</p><p className="mt-1">These are options for older Android devices that cannot use browser AI.</p></SetupStep>
               <SetupStep number={2} title="Choose a small model"><p><strong>Qwen 2.5 0.5B-Instruct</strong> — about 380 MB</p><p className="mt-1"><strong>SmolLM2 360M</strong> — a very small model for low-memory devices.</p></SetupStep>
               <SetupStep number={3} title="Download the model"><p>You'll need internet for the first download. The model stays on your device afterwards.</p></SetupStep>
-              <SetupStep number={4} title="Connect Pessoa"><p>Once your AI app and model are ready, use its local connection details to connect Pessoa.</p></SetupStep>
+              <SetupStep number={4} title="Connect Pessoa"><p><strong>Important:</strong> PocketPal AI currently does not provide a local API endpoint for other apps to connect to its on-device model. So Pessoa cannot connect directly to PocketPal yet.</p><p className="mt-1">For a direct Pessoa connection, use a local AI app/runtime that provides an OpenAI-compatible local server, such as Ollama or LM Studio on a computer.</p></SetupStep>
             </>
           ) : browserCheck === 'checking' ? (
             <div className="space-y-2">
@@ -183,22 +181,22 @@ export default function GuidedAISetup() {
                 <>
                   <SetupStep number={1} title="Use an AI app on your phone"><p>Try <strong>PocketPal AI</strong> or <strong>Maid</strong>. These can run AI models directly on your Android device.</p></SetupStep>
                   <SetupStep number={2} title="Choose a small model"><p>Start with a small model that fits your phone's available memory.</p></SetupStep>
-                  <SetupStep number={3} title="Connect Pessoa"><p>Once the app and model are ready, use the connection details provided by the app to connect Pessoa.</p></SetupStep>
+                  <SetupStep number={3} title="Connect Pessoa"><p><strong>Important:</strong> PocketPal AI currently does not provide a local API endpoint for other apps to connect to its on-device model. Pessoa cannot connect directly to PocketPal yet.</p><p className="mt-1">For a direct connection, choose a local AI app/runtime that provides an OpenAI-compatible local server.</p></SetupStep>
                 </>
               ) : (
                 <>
                   <SetupStep number={1} title="Use a local AI app"><p>Try <strong>Ollama</strong> or <strong>LM Studio</strong> on your computer.</p></SetupStep>
                   <SetupStep number={2} title="Choose a small model"><p>Start with a model that fits your computer's available memory and storage.</p></SetupStep>
-                  <SetupStep number={3} title="Connect Pessoa"><p>Once the app and model are ready, use the connection details provided by the app to connect Pessoa.</p></SetupStep>
+                  <SetupStep number={3} title="Connect Pessoa"><p>Once the app and model are ready, use its OpenAI-compatible local server address in Pessoa's AI connection settings.</p></SetupStep>
                 </>
               )}
             </>
           ) : (
             <>
-              <SetupStep number={1} title="Check your browser"><p>Browser AI is available on this device.</p></SetupStep>
-              <SetupStep number={2} title="Choose a model"><p><strong>Recommended: Qwen 2.5 3B</strong> — about 1.9 GB</p><p className="mt-1">This is the starting model for browser AI.</p></SetupStep>
-              <SetupStep number={3} title="Download the model">
-                <p>Select <strong>Download</strong>. You need internet the first time. The model is saved on your device.</p>
+              <SetupStep number={1} title="Your device can use browser AI"><p><strong>Browser AI is available on this device.</strong></p><p className="mt-1">Pessoa can run AI directly in your browser. You do not need to install a separate AI app or runtime.</p></SetupStep>
+              <SetupStep number={2} title="Get your AI model"><p>Pessoa needs an AI model to work. The model is the AI that Pessoa will use. You'll download it once and keep it on your device.</p><p className="mt-1"><strong>Recommended: Qwen 2.5 3B</strong> — about 1.9 GB</p><p className="mt-1">This is the starting model for browser AI.</p></SetupStep>
+              <SetupStep number={3} title="Download your AI model">
+                <p>Select <strong>Download model</strong>. You need internet the first time. The model is saved on your device, so you will not need to download it again.</p>
                 <div className="mt-3 space-y-2">
                   <button type="button" onClick={downloadBrowserModel} disabled={downloadState === 'downloading' || downloadState === 'ready'} className="min-h-10 rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60" style={{ backgroundColor: teal }}>
                     {downloadState === 'downloading' ? `Downloading… ${downloadProgress}%` : downloadState === 'ready' ? 'Model ready' : 'Download model'}
@@ -208,7 +206,7 @@ export default function GuidedAISetup() {
                   {downloadState === 'error' && <p className="text-sm text-stone-600 dark:text-stone-400">{downloadError}</p>}
                 </div>
               </SetupStep>
-              <SetupStep number={4} title="You're ready"><p>Pessoa can now use the model in your browser. Processing happens on your device.</p></SetupStep>
+              <SetupStep number={4} title="You're ready"><p><strong>Your AI model is ready.</strong></p><p className="mt-1">Pessoa can now use the model directly in your browser. Processing happens on your device.</p></SetupStep>
             </>
           )}
 
