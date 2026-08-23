@@ -43,9 +43,9 @@ export default function GuidedAISetup() {
     setBrowserCheck('idle');
     setBrowserReason(null);
 
-    // Android 11 and earlier use the local-app route. Every other route
-    // checks the actual browser capability before showing browser setup.
-    if (route !== 'app') {
+    // Only browser routes need a WebGPU capability check. Windows uses the
+    // local-app route regardless of whether the browser itself supports WebGPU.
+    if (route === 'browser') {
       setBrowserCheck('checking');
       try {
         const capability = await checkWebGPUSupport();
@@ -136,6 +136,20 @@ export default function GuidedAISetup() {
               <SetupStep number={3} title="Download the model"><p>You'll need internet for the first download. The model stays on your device afterwards.</p></SetupStep>
               <SetupStep number={4} title="Connect Pessoa"><p>Once your AI app and model are ready, use its local connection details to connect Pessoa.</p></SetupStep>
             </>
+          ) : route === 'windows-beginner' || route === 'windows-intermediate' ? (
+            <>
+              <SetupStep number={1} title="Choose how you want to run AI"><p>For a Windows computer, you can use a local AI app such as <strong>Ollama</strong> or <strong>LM Studio</strong>.</p></SetupStep>
+              <SetupStep number={2} title="Install your AI app"><p>Install the app you choose and follow its setup instructions.</p></SetupStep>
+              <SetupStep number={3} title="Choose and download a model"><p>Choose a model that your computer can run comfortably. Start with a smaller model if you are unsure.</p></SetupStep>
+              <SetupStep number={4} title="Connect Pessoa"><p>Use the connection details provided by your AI app to connect Pessoa.</p></SetupStep>
+            </>
+          ) : route === 'windows-advanced' ? (
+            <>
+              <SetupStep number={1} title="Choose your local AI setup"><p>On Windows, you can use <strong>Ollama</strong>, <strong>LM Studio</strong>, or another compatible local AI service.</p></SetupStep>
+              <SetupStep number={2} title="Choose your model and runtime"><p>Select a model appropriate for your available memory and processing hardware, then configure your chosen runtime.</p></SetupStep>
+              <SetupStep number={3} title="Start the local service"><p>Start the model service and confirm the local endpoint supplied by your AI application.</p></SetupStep>
+              <SetupStep number={4} title="Connect Pessoa"><p>Enter the local connection details in Pessoa and test the connection.</p></SetupStep>
+            </>
           ) : browserCheck === 'checking' ? (
             <div className="space-y-2">
               <p className="text-sm font-semibold" style={{ color: indigo }}>Checking your device…</p>
@@ -161,20 +175,6 @@ export default function GuidedAISetup() {
                   <SetupStep number={3} title="Connect Pessoa"><p>Once the app and model are ready, use the connection details provided by the app to connect Pessoa.</p></SetupStep>
                 </>
               )}
-            </>
-          ) : route === 'windows-intermediate' ? (
-            <>
-              <SetupStep number={1} title="Choose how you want to run AI"><p>For a Windows computer, you can use a local AI app such as <strong>Ollama</strong> or <strong>LM Studio</strong>.</p></SetupStep>
-              <SetupStep number={2} title="Install your AI app"><p>Install the app you choose and follow its setup instructions.</p></SetupStep>
-              <SetupStep number={3} title="Choose and download a model"><p>Choose a model that your computer can run comfortably. Start with a smaller model if you are unsure.</p></SetupStep>
-              <SetupStep number={4} title="Connect Pessoa"><p>Use the connection details provided by your AI app to connect Pessoa.</p></SetupStep>
-            </>
-          ) : route === 'windows-advanced' ? (
-            <>
-              <SetupStep number={1} title="Choose your local AI setup"><p>On Windows, you can use <strong>Ollama</strong>, <strong>LM Studio</strong>, or another compatible local AI service.</p></SetupStep>
-              <SetupStep number={2} title="Choose your model and runtime"><p>Select a model appropriate for your available memory and processing hardware, then configure your chosen runtime.</p></SetupStep>
-              <SetupStep number={3} title="Start the local service"><p>Start the model service and confirm the local endpoint supplied by your AI application.</p></SetupStep>
-              <SetupStep number={4} title="Connect Pessoa"><p>Enter the local connection details in Pessoa and test the connection.</p></SetupStep>
             </>
           ) : (
             <>
