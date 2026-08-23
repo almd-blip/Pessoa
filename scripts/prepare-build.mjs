@@ -112,8 +112,15 @@ const guidedPath = path.join(root, 'src/components/GuidedAISetup.tsx');
 let guided = fs.readFileSync(guidedPath, 'utf8');
 const oldReady = `              <SetupStep number={4} title="You're ready"><p><strong>Your AI model is ready.</strong> Pessoa can now use it directly in your browser. Processing happens on your device.</p></SetupStep>`;
 const newReady = `              {downloadState === 'error' && <div className="space-y-2"><p className="text-sm font-semibold" style={{ color: burgundy }}>The model could not be downloaded.</p><p className="text-sm leading-relaxed text-stone-600 dark:text-stone-400">Please check your internet connection and try again.</p><button type="button" onClick={downloadBrowserModel} className="min-h-10 rounded-lg px-4 py-2 text-sm font-semibold text-white" style={{ backgroundColor: teal }}>Try again</button></div>}
-              {downloadState === 'ready' && <SetupStep number={4} title="You're ready"><p><strong>Your AI model is ready.</strong> Pessoa can now use it directly in your browser. Processing happens on your device.</p></SetupStep>`;
-if (!guided.includes(newReady)) {
+              {downloadState === 'ready' && <SetupStep number={4} title="You're ready"><p><strong>Your AI model is ready.</strong> Pessoa can now use it directly in your browser. Processing happens on your device.</p></SetupStep>}`;
+const malformedReady = `              {downloadState === 'error' && <div className="space-y-2"><p className="text-sm font-semibold" style={{ color: burgundy }}>The model could not be downloaded.</p><p className="text-sm leading-relaxed text-stone-600 dark:text-stone-400">Please check your internet connection and try again.</p><button type="button" onClick={downloadBrowserModel} className="min-h-10 rounded-lg px-4 py-2 text-sm font-semibold text-white" style={{ backgroundColor: teal }}>Try again</button></div>}
+              {downloadState === 'ready' && <SetupStep number={4} title="You're ready"><p><strong>Your AI model is ready.</strong> Pessoa can now use it directly in your browser. Processing happens on this device.</p></SetupStep>`;
+
+if (guided.includes(malformedReady)) {
+  guided = guided.replace(malformedReady, newReady);
+  fs.writeFileSync(guidedPath, guided, 'utf8');
+  console.log('Prepared GuidedAISetup.tsx: repaired browser AI success-state JSX');
+} else if (!guided.includes(newReady)) {
   if (!guided.includes(oldReady)) throw new Error('Could not find the browser AI success state in GuidedAISetup.tsx');
   guided = guided.replace(oldReady, newReady);
   fs.writeFileSync(guidedPath, guided, 'utf8');
