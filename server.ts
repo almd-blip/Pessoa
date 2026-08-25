@@ -53,13 +53,6 @@ interface LocalAiConfig {
   baseUrl: string;
   model: string;
   apiKey?: string;
-  /**
-   * Reserved for a future explicit, per-task confirmation flow. The shared
-   * AI task layer (runAiTask, below) never reads these to auto-trigger a
-   * cloud fallback after a local failure — see docs/P0-TRUST.md, D-003.
-   */
-  strictOffline?: boolean;
-  autoFallback?: boolean;
 }
 
 function cleanJsonText(rawText: string): string {

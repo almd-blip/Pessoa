@@ -11,14 +11,6 @@ export interface LocalAIConfig {
   baseUrl: string;
   model: string;
   apiKey?: string;
-  /**
-   * Reserved for a future explicit, per-task confirmation flow. Per the P0
-   * trust contract (docs/P0-TRUST.md, D-003), Pessoa never automatically
-   * escalates a failed local/private route to the cloud, so this flag is
-   * not read anywhere to trigger fallback on its own.
-   */
-  strictOffline: boolean;
-  autoFallback: boolean;
   customSystemPromptSuffix?: string;
 }
 
@@ -241,8 +233,6 @@ export const DEFAULT_LOCAL_AI_CONFIG: LocalAIConfig = {
   provider: 'webllm',
   baseUrl: 'in-browser-gpu',
   model: 'Qwen2.5-3B-Instruct-q4f16_1-MLC',
-  strictOffline: false,
-  autoFallback: true,
 };
 
 export function getLocalAIConfig(): LocalAIConfig {
