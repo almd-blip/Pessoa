@@ -11,6 +11,12 @@ export interface LocalAIConfig {
   baseUrl: string;
   model: string;
   apiKey?: string;
+  /**
+   * Reserved for a future explicit, per-task confirmation flow. Per the P0
+   * trust contract (docs/P0-TRUST.md, D-003), Pessoa never automatically
+   * escalates a failed local/private route to the cloud, so this flag is
+   * not read anywhere to trigger fallback on its own.
+   */
   strictOffline: boolean;
   autoFallback: boolean;
   customSystemPromptSuffix?: string;
@@ -341,11 +347,19 @@ export async function testLocalAIConnection(config: LocalAIConfig): Promise<Loca
 /**
  * Standard fetch helper that attaches the user's Local AI configuration to API calls,
  * or routes directly to in-browser WebLLM if enabled.
+ *
+ * P0 privacy invariant (docs/P0-TRUST.md, docs/DECISIONS.md D-003): a failure of a
+ * more private processing route must NEVER automatically escalate the task to a
+ * less private one. If the user's explicitly selected route is browser-local
+ * WebLLM and it fails, this function reports that failure and returns — it does
+ * NOT silently send the task to the cloud endpoint instead. Switching providers
+ * is always a separate, explicit action taken by the user in AI settings.
  */
 export async function postWithAiRouting(url: string, payload: any): Promise<Response> {
   const localConfig = getLocalAIConfig();
 
-  // If WebLLM In-Browser is chosen and enabled
+  // If WebLLM In-Browser is chosen and enabled, processing must actually
+  // happen in the browser — this is the only route that satisfies that.
   if (localConfig.enabled && localConfig.provider === 'webllm') {
     try {
       // Map common endpoints to direct in-browser inference
@@ -372,25 +386,34 @@ export async function postWithAiRouting(url: string, payload: any): Promise<Resp
       }
 
       const result = await executeWebLLMPrompt(systemPrompt, userPrompt, localConfig.model, isJson);
+      const body = typeof result === 'object' && result !== null
+        ? { ...result, _processing: { route: 'local-browser', provider: 'webllm', model: localConfig.model } }
+        : { text: result, _processing: { route: 'local-browser', provider: 'webllm', model: localConfig.model } };
 
-      return new Response(JSON.stringify(result), {
+      return new Response(JSON.stringify(body), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
       });
     } catch (webLlmErr: any) {
-      console.warn('WebLLM in-browser execution failed:', webLlmErr);
-      if (localConfig.strictOffline) {
-        return new Response(
-          JSON.stringify({
-            error: `In-browser WebGPU inference failed: ${webLlmErr?.message || 'Unknown error'}. Strict Offline Mode is ON so cloud fallback is blocked.`,
-          }),
-          { status: 500, headers: { 'Content-Type': 'application/json' } }
-        );
-      }
-      // Otherwise fall through to standard backend proxy
+      // Do not fall through to the cloud endpoint here. Report the local
+      // failure and let the user decide — e.g. by switching to Gemini Cloud
+      // in AI settings — rather than Pessoa silently deciding for them.
+      console.warn('WebLLM in-browser execution failed. No automatic cloud fallback was attempted:', webLlmErr);
+      return new Response(
+        JSON.stringify({
+          error: `In-browser WebGPU processing failed: ${webLlmErr?.message || 'Unknown error'}. Pessoa does not automatically send this task to a cloud provider after a local failure. To process this task in the cloud, switch your AI provider to Gemini Cloud in AI settings and try again.`,
+          processingRoute: 'local-browser',
+          provider: 'webllm',
+          localFailure: true,
+        }),
+        { status: 502, headers: { 'Content-Type': 'application/json' } }
+      );
     }
   }
 
+  // Any other route (a configured local/self-hosted server, or Gemini Cloud)
+  // is resolved server-side by the shared AI task layer in server.ts, which
+  // enforces the same no-silent-fallback invariant for that route.
   const enrichedPayload = {
     ...payload,
     localAiConfig: localConfig.enabled ? localConfig : undefined,

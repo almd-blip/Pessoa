@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { Paper, Collection, Annotation } from '../types';
 import DataIngestionModule from './DataIngestionModule';
+import { postWithAiRouting } from '../lib/localAiService';
 
 export type CommonCitationStyle = 'Harvard' | 'APA' | 'MLA' | 'Chicago' | 'IEEE' | 'Vancouver';
 
@@ -368,14 +369,10 @@ export default function LiteratureLibrary({
   const handleVerifyMetadata = async (paper: Paper) => {
     setVerifyingId(paper.id);
     try {
-      const res = await fetch('/api/gemini/metadata-verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: paper.title,
-          authors: paper.authors,
-          doi: paper.doi,
-        }),
+      const res = await postWithAiRouting('/api/gemini/metadata-verify', {
+        title: paper.title,
+        authors: paper.authors,
+        doi: paper.doi,
       });
 
       if (res.ok) {

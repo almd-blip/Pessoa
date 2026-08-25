@@ -6,6 +6,7 @@
 import { useState, useEffect } from 'react';
 import { Paper, ResearchJourney, Collection, MoodCheckIn, AccessibilitySettings, DEFAULT_ACCESSIBILITY_SETTINGS } from './types';
 import { INITIAL_PAPERS, INITIAL_JOURNEYS, INITIAL_COLLECTIONS } from './data';
+import { postWithAiRouting } from './lib/localAiService';
 
 // Import sub-modules
 import ResearchHome from './components/ResearchHome';
@@ -397,14 +398,10 @@ export default function App() {
 
   const handleVerifyMetadataBridge = async (paper: Paper) => {
     try {
-      const res = await fetch('/api/gemini/metadata-verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: paper.title,
-          authors: paper.authors,
-          doi: paper.doi,
-        }),
+      const res = await postWithAiRouting('/api/gemini/metadata-verify', {
+        title: paper.title,
+        authors: paper.authors,
+        doi: paper.doi,
       });
 
       if (res.ok) {

@@ -180,11 +180,7 @@ export default function ResearchIntelligenceLayer({
     setLoadingSynthesis(true);
     try {
       const selectedPapers = allCorpusPapers.filter(p => selectedPaperIds.includes(p.id));
-      const res = await fetch('/api/gemini/connect-literature', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ papers: selectedPapers }),
-      });
+      const res = await postWithAiRouting('/api/gemini/connect-literature', { papers: selectedPapers });
       if (res.ok) {
         const data = await res.json();
         setSynthesisOutput(data);
