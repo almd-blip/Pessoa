@@ -53,8 +53,6 @@ interface LocalAiConfig {
   baseUrl: string;
   model: string;
   apiKey?: string;
-  strictOffline?: boolean;
-  autoFallback?: boolean;
 }
 
 function cleanJsonText(rawText: string): string {
@@ -143,55 +141,233 @@ async function callLocalAiRuntime(
 }
 
 /**
- * Unified AI Executor supporting Replaceable Local AI Runtimes (Ollama/LM Studio/GPT4All/AnythingLLM)
- * and Cloud Gemini.
+ * ----------------- SHARED AI TASK LAYER (P0) -----------------
+ *
+ * This is the single architectural boundary between Pessoa and AI providers.
+ * Every AI task entry point (see docs/P0-TRUST.md, requirement 6) must call
+ * runAiTask() rather than constructing its own provider call, routing, or
+ * fallback logic.
+ *
+ * Trust invariants enforced here (docs/P0-TRUST.md / docs/DECISIONS.md D-003):
+ *  1. No automatic local -> cloud fallback. If the explicitly selected local
+ *     runtime fails, that failure is reported to the caller. This function
+ *     NEVER silently retries the same task against the cloud provider.
+ *  2. Provider choice is explicit: the route is derived only from the
+ *     request's own localAiConfig, never guessed or substituted.
+ *  3. Processing location is always reported back via `_processing` so the
+ *     UI can truthfully represent where the task actually ran.
+ *  4. Structured output is validated against the declared schema at runtime
+ *     (see validateAgainstSchema) for both local and cloud routes — a
+ *     syntactically valid but structurally wrong response is rejected, not
+ *     passed through.
+ *  5. Research-integrity guardrails (RESEARCH_INTEGRITY_INSTRUCTION) are
+ *     applied consistently to every task by default, regardless of route.
  */
-async function generateUnifiedContent(
-  reqBody: any,
-  prompt: string,
-  systemInstruction: string,
-  geminiSchemaConfig?: any
-): Promise<string> {
-  const localConfig: LocalAiConfig | undefined = reqBody.localAiConfig;
 
-  if (localConfig && localConfig.enabled && localConfig.provider !== 'gemini') {
-    try {
-      console.log(`Routing request to Local AI Runtime [${localConfig.provider}] model=${localConfig.model} at ${localConfig.baseUrl}`);
-      const rawLocalOutput = await callLocalAiRuntime(localConfig, prompt, systemInstruction);
-      return cleanJsonText(rawLocalOutput);
-    } catch (err: any) {
-      console.error(`Local AI call to ${localConfig.provider} failed:`, err.message);
+/**
+ * Recursively validate a parsed AI response against the same Gemini-style
+ * schema declaration used to request structured output. Reused rather than
+ * redefined so there is exactly one source of truth for each task's shape.
+ */
+function validateAgainstSchema(value: any, schema: any, path: string = 'root'): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
 
-      if (localConfig.strictOffline) {
-        throw new Error(`Strict Offline Mode Active: Failed to reach local AI runtime (${localConfig.provider}). Error: ${err.message}`);
+  function walk(val: any, sch: any, p: string) {
+    if (!sch || typeof sch !== 'object' || errors.length >= 20) return;
+
+    switch (sch.type) {
+      case Type.OBJECT: {
+        if (val === null || typeof val !== 'object' || Array.isArray(val)) {
+          errors.push(`${p}: expected an object`);
+          return;
+        }
+        const required: string[] = Array.isArray(sch.required) ? sch.required : [];
+        for (const key of required) {
+          if (val[key] === undefined || val[key] === null) {
+            errors.push(`${p}.${key}: missing required field`);
+          }
+        }
+        if (sch.properties) {
+          for (const key of Object.keys(sch.properties)) {
+            if (val[key] !== undefined && val[key] !== null) {
+              walk(val[key], sch.properties[key], `${p}.${key}`);
+            }
+          }
+        }
+        break;
       }
-
-      if (localConfig.autoFallback !== false) {
-        console.warn('Auto-fallback triggered: Falling back to Gemini Cloud API.');
-      } else {
-        throw err;
+      case Type.ARRAY: {
+        if (!Array.isArray(val)) {
+          errors.push(`${p}: expected an array`);
+          return;
+        }
+        if (sch.items) {
+          val.forEach((item: any, idx: number) => walk(item, sch.items, `${p}[${idx}]`));
+        }
+        break;
       }
+      case Type.STRING: {
+        if (typeof val !== 'string') errors.push(`${p}: expected a string`);
+        break;
+      }
+      case Type.INTEGER:
+      case Type.NUMBER: {
+        if (typeof val !== 'number' || !Number.isFinite(val)) errors.push(`${p}: expected a number`);
+        break;
+      }
+      case Type.BOOLEAN: {
+        if (typeof val !== 'boolean') errors.push(`${p}: expected a boolean`);
+        break;
+      }
+      default:
+        break;
     }
   }
 
-  // Fallback / Standard Gemini Call
-  const ai = getGeminiClient();
-  const geminiConfig: any = {
-    systemInstruction,
-  };
+  walk(value, schema, path);
+  return { valid: errors.length === 0, errors };
+}
 
-  if (geminiSchemaConfig) {
+interface AiTaskOptions {
+  /** Short identifier used only in logs/error messages, e.g. "summarize". */
+  taskName: string;
+  systemInstruction: string;
+  /** Prompt text used for the local-runtime route (and cloud route unless `contents` is given). */
+  buildPrompt: () => string;
+  /** Optional richer content array for the cloud route (e.g. multi-turn chat history). */
+  contents?: any;
+  /** Gemini-style schema, also reused at runtime to validate the actual output. */
+  schema?: any;
+  /** The raw request body, expected to carry an optional `localAiConfig`. */
+  reqBody: any;
+  /** Whether the output is JSON to be parsed/validated. Defaults to true. */
+  isJsonTask?: boolean;
+  /** Whether to append the research-integrity guardrail. Defaults to true. */
+  applyResearchIntegrity?: boolean;
+}
+
+interface AiTaskResult {
+  status: number;
+  body: any;
+}
+
+async function runAiTask(opts: AiTaskOptions): Promise<AiTaskResult> {
+  const { taskName, schema, reqBody } = opts;
+  const isJsonTask = opts.isJsonTask !== false;
+  const applyResearchIntegrity = opts.applyResearchIntegrity !== false;
+
+  const systemInstruction = applyResearchIntegrity
+    ? `${opts.systemInstruction}\n${RESEARCH_INTEGRITY_INSTRUCTION}`
+    : opts.systemInstruction;
+
+  const localConfig: LocalAiConfig | undefined = reqBody?.localAiConfig;
+  const wantsLocal = !!(localConfig && localConfig.enabled && localConfig.provider && localConfig.provider !== 'gemini');
+
+  const prompt = opts.buildPrompt();
+
+  if (wantsLocal) {
+    const config = localConfig as LocalAiConfig;
+    const processing = { route: 'local-server', provider: config.provider, model: config.model || 'default' };
+    try {
+      console.log(`[AI Task Layer] "${taskName}" -> local runtime [${config.provider}] model=${config.model || 'default'} at ${config.baseUrl}`);
+      const rawOutput = await callLocalAiRuntime(config, prompt, systemInstruction);
+      const cleaned = cleanJsonText(rawOutput);
+
+      if (!isJsonTask) {
+        return { status: 200, body: { text: cleaned, _processing: processing } };
+      }
+
+      let parsed: any;
+      try {
+        parsed = JSON.parse(cleaned);
+      } catch {
+        return {
+          status: 502,
+          body: {
+            error: `Local AI runtime (${config.provider}) did not return valid JSON for "${taskName}". This task was not sent to a cloud provider. Switch to Gemini Cloud in AI settings if you want it processed there.`,
+            processingRoute: 'local-server',
+            provider: config.provider,
+          },
+        };
+      }
+
+      if (schema) {
+        const validation = validateAgainstSchema(parsed, schema);
+        if (!validation.valid) {
+          return {
+            status: 502,
+            body: {
+              error: `Local AI runtime (${config.provider}) returned output that did not match the required structure for "${taskName}": ${validation.errors.join('; ')}. This task was not sent to a cloud provider.`,
+              processingRoute: 'local-server',
+              provider: config.provider,
+            },
+          };
+        }
+      }
+
+      return { status: 200, body: { ...parsed, _processing: processing } };
+    } catch (err: any) {
+      // P0 privacy invariant: a failed local/private route must NEVER
+      // silently escalate to the cloud provider. Report the failure and
+      // preserve the user's control over where their material is sent.
+      console.error(`[AI Task Layer] Local runtime failed for "${taskName}" (${config.provider}):`, err.message);
+      return {
+        status: 502,
+        body: {
+          error: `Local AI runtime (${config.provider}) is unavailable or failed: ${err.message}. Pessoa does not automatically send this task to a cloud provider after a local failure — the task was not processed. Switch to Gemini Cloud in AI settings if you want to process it in the cloud.`,
+          processingRoute: 'local-server',
+          provider: config.provider,
+          localFailure: true,
+        },
+      };
+    }
+  }
+
+  // Explicit cloud route — only reached when no local provider is configured/enabled.
+  const ai = getGeminiClient();
+  const geminiConfig: any = { systemInstruction };
+  if (schema) {
     geminiConfig.responseMimeType = 'application/json';
-    geminiConfig.responseSchema = geminiSchemaConfig;
+    geminiConfig.responseSchema = schema;
   }
 
   const response = await ai.models.generateContent({
     model: 'gemini-3.5-flash',
-    contents: prompt,
+    contents: opts.contents ?? prompt,
     config: geminiConfig,
   });
 
-  return response.text || '';
+  const processing = { route: 'cloud', provider: 'gemini', model: 'gemini-3.5-flash' };
+
+  if (!isJsonTask) {
+    return { status: 200, body: { text: response.text || '', _processing: processing } };
+  }
+
+  let parsed: any;
+  try {
+    parsed = JSON.parse(response.text || '{}');
+  } catch {
+    return {
+      status: 502,
+      body: { error: `Cloud AI provider returned output that could not be parsed as valid JSON for "${taskName}".`, processingRoute: 'cloud', provider: 'gemini' },
+    };
+  }
+
+  if (schema) {
+    const validation = validateAgainstSchema(parsed, schema);
+    if (!validation.valid) {
+      return {
+        status: 502,
+        body: {
+          error: `Cloud AI provider returned output that did not match the required structure for "${taskName}": ${validation.errors.join('; ')}`,
+          processingRoute: 'cloud',
+          provider: 'gemini',
+        },
+      };
+    }
+  }
+
+  return { status: 200, body: { ...parsed, _processing: processing } };
 }
 
 // ----------------- LOCAL AI HEALTH CHECK -----------------
@@ -270,8 +446,11 @@ app.post('/api/gemini/summarize', async (req, res) => {
       return res.status(400).json({ error: 'Paper title is required' });
     }
 
-    const ai = getGeminiClient();
-    const prompt = `Perform a rigorous, objective academic analysis of the following paper:
+    const result = await runAiTask({
+      taskName: 'summarize',
+      reqBody: req.body,
+      systemInstruction: 'You are a highly rigorous, calm academic meta-researcher and librarian. Your goal is to analyze papers accurately, check evidence strength objectively, and prevent hallucination.',
+      buildPrompt: () => `Perform a rigorous, objective academic analysis of the following paper:
 Title: ${title}
 Authors: ${authors || 'Unknown'}
 Abstract/Text: ${abstract || 'No abstract provided.'}
@@ -288,41 +467,32 @@ Please extract:
 8. Two key quotations from the text or abstract (or closely formulated if abstract is short).
 9. Major concepts or keywords.
 
-Strict academic integrity rule: DO NOT FABRICATE citations, references, or claims. If details are not in the text, write "Not explicitly detailed in text" instead of inventing them.`;
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash',
-      contents: prompt,
-      config: {
-        systemInstruction: 'You are a highly rigorous, calm academic meta-researcher and librarian. Your goal is to analyze papers accurately, check evidence strength objectively, and prevent hallucination.',
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.OBJECT,
-          required: ['researchQuestion', 'methods', 'participants', 'findings', 'limitations', 'evidenceStrength', 'evidenceExplanation', 'futureResearch', 'keyQuotations', 'majorConcepts'],
-          properties: {
-            researchQuestion: { type: Type.STRING },
-            methods: { type: Type.STRING },
-            participants: { type: Type.STRING },
-            findings: { type: Type.STRING },
-            limitations: { type: Type.STRING },
-            evidenceStrength: { type: Type.INTEGER, description: 'Rating 1 to 5 representing strength of evidence' },
-            evidenceExplanation: { type: Type.STRING },
-            futureResearch: { type: Type.STRING },
-            keyQuotations: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING }
-            },
-            majorConcepts: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING }
-            }
+Strict academic integrity rule: DO NOT FABRICATE citations, references, or claims. If details are not in the text, write "Not explicitly detailed in text" instead of inventing them.`,
+      schema: {
+        type: Type.OBJECT,
+        required: ['researchQuestion', 'methods', 'participants', 'findings', 'limitations', 'evidenceStrength', 'evidenceExplanation', 'futureResearch', 'keyQuotations', 'majorConcepts'],
+        properties: {
+          researchQuestion: { type: Type.STRING },
+          methods: { type: Type.STRING },
+          participants: { type: Type.STRING },
+          findings: { type: Type.STRING },
+          limitations: { type: Type.STRING },
+          evidenceStrength: { type: Type.INTEGER, description: 'Rating 1 to 5 representing strength of evidence' },
+          evidenceExplanation: { type: Type.STRING },
+          futureResearch: { type: Type.STRING },
+          keyQuotations: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING }
+          },
+          majorConcepts: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING }
           }
         }
       }
     });
 
-    const summaryData = JSON.parse(response.text || '{}');
-    res.json(summaryData);
+    res.status(result.status).json(result.body);
   } catch (error: any) {
     console.error('Error in /api/gemini/summarize:', error);
     res.status(500).json({ error: error.message || 'Failed to generate structured summary' });
@@ -341,8 +511,11 @@ app.post('/api/gemini/analyze-draft', async (req, res) => {
       ? papersInLibrary.map((p: any) => `Paper ID: ${p.id}\nTitle: ${p.title}\nAuthors: ${p.authors}\nFindings: ${p.structuredSummary?.findings || 'Not analyzed yet.'}`).join('\n\n')
       : 'None available in the local library.';
 
-    const ai = getGeminiClient();
-    const prompt = `Analyze the following academic writing draft. 
+    const result = await runAiTask({
+      taskName: 'analyze-draft',
+      reqBody: req.body,
+      systemInstruction: 'You are a warm, encouraging, but academically rigorous Writing Coach and supervisor. You help researchers organize their arguments, identify gaps in evidence, and cite from their existing library without pressuring them.',
+      buildPrompt: () => `Analyze the following academic writing draft. 
 Cross-reference it with the researcher's local Library Papers listed below.
 
 Draft Text:
@@ -359,65 +532,56 @@ Perform these precise, highly supportive tasks:
 3. Identify if any papers in the researcher's local library contain contradictory or conflicting evidence compared to claims in the draft.
 4. Suggest constructive outline or argumentative enhancements to make the research more cohesive.
 
-IMPORTANT: Keep your analysis objective, deeply respectful, supportive, and trace everything back to the actual papers provided. Under no circumstances should you invent references that do not exist.`;
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash',
-      contents: prompt,
-      config: {
-        systemInstruction: 'You are a warm, encouraging, but academically rigorous Writing Coach and supervisor. You help researchers organize their arguments, identify gaps in evidence, and cite from their existing library without pressuring them.',
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.OBJECT,
-          required: ['unsupportedClaims', 'supportedByLibrary', 'contradictoryEvidence', 'outlineSuggestions'],
-          properties: {
-            unsupportedClaims: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                required: ['claimText', 'issue', 'recommendation'],
-                properties: {
-                  claimText: { type: Type.STRING, description: 'The exact or paraphrased claim text' },
-                  issue: { type: Type.STRING, description: 'Why this claim is unsupported' },
-                  recommendation: { type: Type.STRING, description: 'How the user can find or cite evidence' }
-                }
+IMPORTANT: Keep your analysis objective, deeply respectful, supportive, and trace everything back to the actual papers provided. Under no circumstances should you invent references that do not exist.`,
+      schema: {
+        type: Type.OBJECT,
+        required: ['unsupportedClaims', 'supportedByLibrary', 'contradictoryEvidence', 'outlineSuggestions'],
+        properties: {
+          unsupportedClaims: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              required: ['claimText', 'issue', 'recommendation'],
+              properties: {
+                claimText: { type: Type.STRING, description: 'The exact or paraphrased claim text' },
+                issue: { type: Type.STRING, description: 'Why this claim is unsupported' },
+                recommendation: { type: Type.STRING, description: 'How the user can find or cite evidence' }
               }
-            },
-            supportedByLibrary: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                required: ['claimText', 'paperTitle', 'howItSupports'],
-                properties: {
-                  claimText: { type: Type.STRING },
-                  paperTitle: { type: Type.STRING },
-                  howItSupports: { type: Type.STRING }
-                }
-              }
-            },
-            contradictoryEvidence: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                required: ['draftClaim', 'paperTitle', 'conflictDetails'],
-                properties: {
-                  draftClaim: { type: Type.STRING },
-                  paperTitle: { type: Type.STRING },
-                  conflictDetails: { type: Type.STRING, description: 'Description of the contradictory evidence in this paper' }
-                }
-              }
-            },
-            outlineSuggestions: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING }
             }
+          },
+          supportedByLibrary: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              required: ['claimText', 'paperTitle', 'howItSupports'],
+              properties: {
+                claimText: { type: Type.STRING },
+                paperTitle: { type: Type.STRING },
+                howItSupports: { type: Type.STRING }
+              }
+            }
+          },
+          contradictoryEvidence: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              required: ['draftClaim', 'paperTitle', 'conflictDetails'],
+              properties: {
+                draftClaim: { type: Type.STRING },
+                paperTitle: { type: Type.STRING },
+                conflictDetails: { type: Type.STRING, description: 'Description of the contradictory evidence in this paper' }
+              }
+            }
+          },
+          outlineSuggestions: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING }
           }
         }
       }
     });
 
-    const analysisData = JSON.parse(response.text || '{}');
-    res.json(analysisData);
+    res.status(result.status).json(result.body);
   } catch (error: any) {
     console.error('Error in /api/gemini/analyze-draft:', error);
     res.status(500).json({ error: error.message || 'Failed to analyze draft' });
@@ -432,8 +596,11 @@ app.post('/api/gemini/advisor', async (req, res) => {
       return res.status(400).json({ error: 'Mood state is required' });
     }
 
-    const ai = getGeminiClient();
-    const prompt = `The researcher has checked in today feeling: "${moodState.toUpperCase()}".
+    const result = await runAiTask({
+      taskName: 'advisor',
+      reqBody: req.body,
+      systemInstruction: 'You are an exceptional, warm, wise, and encouraging PhD Supervisor and research wellbeing companion. You help researchers handle uncertainty, reduce overwhelm, and find intellectual joy in their journeys.',
+      buildPrompt: () => `The researcher has checked in today feeling: "${moodState.toUpperCase()}".
 Context of current project: ${projectDetails || 'General Academic Research'}.
 Researcher's prompt/question: "${question || 'How should I tackle my work today?'}"
 
@@ -442,32 +609,23 @@ Provide an academic-advising style mentoring response that is:
 2. Adaptable to their mood (e.g., if "overwhelmed", break steps into micro-tasks; if "stuck", suggest alternative starting methods; if "doubting myself", provide gentle impostor syndrome reframing).
 3. Highly scientific and evidence-informed (never therapeutic, never patronizing, always professional and humble).
 4. Includes 3 specific, low-friction next actions.
-5. Includes a comforting, academic reflection prompt.`;
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash',
-      contents: prompt,
-      config: {
-        systemInstruction: 'You are an exceptional, warm, wise, and encouraging PhD Supervisor and research wellbeing companion. You help researchers handle uncertainty, reduce overwhelm, and find intellectual joy in their journeys.',
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.OBJECT,
-          required: ['mentoringResponse', 'actionSteps', 'reflectionPrompt'],
-          properties: {
-            mentoringResponse: { type: Type.STRING, description: 'The paragraph of wise academic advice' },
-            actionSteps: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING },
-              description: '3 small, low-pressure steps'
-            },
-            reflectionPrompt: { type: Type.STRING, description: 'A gentle prompt for reflection' }
-          }
+5. Includes a comforting, academic reflection prompt.`,
+      schema: {
+        type: Type.OBJECT,
+        required: ['mentoringResponse', 'actionSteps', 'reflectionPrompt'],
+        properties: {
+          mentoringResponse: { type: Type.STRING, description: 'The paragraph of wise academic advice' },
+          actionSteps: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING },
+            description: '3 small, low-pressure steps'
+          },
+          reflectionPrompt: { type: Type.STRING, description: 'A gentle prompt for reflection' }
         }
       }
     });
 
-    const advisorData = JSON.parse(response.text || '{}');
-    res.json(advisorData);
+    res.status(result.status).json(result.body);
   } catch (error: any) {
     console.error('Error in /api/gemini/advisor:', error);
     res.status(500).json({ error: error.message || 'Failed to consult advisor' });
@@ -482,43 +640,37 @@ app.post('/api/gemini/metadata-verify', async (req, res) => {
       return res.status(400).json({ error: 'Title is required for metadata verification' });
     }
 
-    const ai = getGeminiClient();
-    const prompt = `Verify, correct, and complete the metadata for the following academic work:
+    const result = await runAiTask({
+      taskName: 'metadata-verify',
+      reqBody: req.body,
+      systemInstruction: 'You are an incredibly accurate academic librarian database resolver. You complete missing details like DOI, standard journal names, authors, and flag missing metadata fields.',
+      buildPrompt: () => `Verify, correct, and complete the metadata for the following academic work:
 Title: ${title}
 Provided Authors: ${authors || 'Unknown'}
 Provided DOI: ${doi || 'None'}
 
 Please provide corrected and standardized metadata based on actual academic databases. 
 If the DOI is missing, identify a probable DOI or provide standard formatting. 
-Flag any missing fields that are required for citation styles (such as Volume, Issue, Pages, Publisher).`;
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash',
-      contents: prompt,
-      config: {
-        systemInstruction: 'You are an incredibly accurate academic librarian database resolver. You complete missing details like DOI, standard journal names, authors, and flag missing metadata fields.',
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.OBJECT,
-          required: ['correctedTitle', 'correctedAuthors', 'correctedJournal', 'correctedYear', 'correctedDoi', 'missingFields', 'verificationStatus'],
-          properties: {
-            correctedTitle: { type: Type.STRING },
-            correctedAuthors: { type: Type.STRING },
-            correctedJournal: { type: Type.STRING },
-            correctedYear: { type: Type.INTEGER },
-            correctedDoi: { type: Type.STRING },
-            missingFields: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING }
-            },
-            verificationStatus: { type: Type.STRING, description: 'Must be "verified" if complete, or "missing_metadata" otherwise' }
-          }
+Flag any missing fields that are required for citation styles (such as Volume, Issue, Pages, Publisher).`,
+      schema: {
+        type: Type.OBJECT,
+        required: ['correctedTitle', 'correctedAuthors', 'correctedJournal', 'correctedYear', 'correctedDoi', 'missingFields', 'verificationStatus'],
+        properties: {
+          correctedTitle: { type: Type.STRING },
+          correctedAuthors: { type: Type.STRING },
+          correctedJournal: { type: Type.STRING },
+          correctedYear: { type: Type.INTEGER },
+          correctedDoi: { type: Type.STRING },
+          missingFields: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING }
+          },
+          verificationStatus: { type: Type.STRING, description: 'Must be "verified" if complete, or "missing_metadata" otherwise' }
         }
       }
     });
 
-    const verifiedData = JSON.parse(response.text || '{}');
-    res.json(verifiedData);
+    res.status(result.status).json(result.body);
   } catch (error: any) {
     console.error('Error in /api/gemini/metadata-verify:', error);
     res.status(500).json({ error: error.message || 'Failed to verify metadata' });
@@ -541,8 +693,11 @@ Findings: ${p.structuredSummary?.findings || 'N/A'}
 Methods: ${p.structuredSummary?.methods || 'N/A'}
 Limitations: ${p.structuredSummary?.limitations || 'N/A'}`).join('\n\n');
 
-    const ai = getGeminiClient();
-    const prompt = `Perform a comprehensive Literature Analysis and Synthesis on the following collection of academic papers and reports:
+    const result = await runAiTask({
+      taskName: 'connect-literature',
+      reqBody: req.body,
+      systemInstruction: 'You are an elite academic synthesizer. You extract major themes, concepts, theories, methodologies, and directed relationships between authors, ideas, and evidence.',
+      buildPrompt: () => `Perform a comprehensive Literature Analysis and Synthesis on the following collection of academic papers and reports:
 
 ${papersDescription}
 
@@ -554,121 +709,112 @@ Analyze this collection locally and identify:
 5. Mapped Relationships: Directed connections between entities (authors, theories, concepts, evidence, or papers). For each relationship, set relationshipType strictly to one of: 'supports', 'challenges', 'extends', 'applies', 'contrasts'. Generate multiple relationships for each relevant type across the corpus.
 6. Schools of Thought: Distinct academic paradigms or perspectives identified across authors.
 7. Agreements & Disagreements: Synthesis of consensus vs friction points.
-8. Distinguish between Established Findings, Emerging Debates, and Unresolved Questions.`;
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash',
-      contents: prompt,
-      config: {
-        systemInstruction: 'You are an elite academic synthesizer. You extract major themes, concepts, theories, methodologies, and directed relationships between authors, ideas, and evidence.',
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.OBJECT,
-          required: [
-            'agreements',
-            'disagreements',
-            'majorThemes',
-            'coreConcepts',
-            'underlyingTheories',
-            'methodologiesUsed',
-            'mappedRelationships',
-            'schoolsOfThought',
-            'establishedFindings',
-            'emergingDebates',
-            'unresolvedQuestions'
-          ],
-          properties: {
-            agreements: { type: Type.STRING },
-            disagreements: { type: Type.STRING },
-            majorThemes: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                required: ['name', 'description', 'linkedPapers', 'keyConcepts'],
-                properties: {
-                  name: { type: Type.STRING },
-                  description: { type: Type.STRING },
-                  linkedPapers: { type: Type.ARRAY, items: { type: Type.STRING } },
-                  keyConcepts: { type: Type.ARRAY, items: { type: Type.STRING } }
-                }
+8. Distinguish between Established Findings, Emerging Debates, and Unresolved Questions.`,
+      schema: {
+        type: Type.OBJECT,
+        required: [
+          'agreements',
+          'disagreements',
+          'majorThemes',
+          'coreConcepts',
+          'underlyingTheories',
+          'methodologiesUsed',
+          'mappedRelationships',
+          'schoolsOfThought',
+          'establishedFindings',
+          'emergingDebates',
+          'unresolvedQuestions'
+        ],
+        properties: {
+          agreements: { type: Type.STRING },
+          disagreements: { type: Type.STRING },
+          majorThemes: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              required: ['name', 'description', 'linkedPapers', 'keyConcepts'],
+              properties: {
+                name: { type: Type.STRING },
+                description: { type: Type.STRING },
+                linkedPapers: { type: Type.ARRAY, items: { type: Type.STRING } },
+                keyConcepts: { type: Type.ARRAY, items: { type: Type.STRING } }
               }
-            },
-            coreConcepts: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                required: ['concept', 'definition', 'usageInLiterature', 'linkedThemes'],
-                properties: {
-                  concept: { type: Type.STRING },
-                  definition: { type: Type.STRING },
-                  usageInLiterature: { type: Type.STRING },
-                  linkedThemes: { type: Type.ARRAY, items: { type: Type.STRING } }
-                }
+            }
+          },
+          coreConcepts: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              required: ['concept', 'definition', 'usageInLiterature', 'linkedThemes'],
+              properties: {
+                concept: { type: Type.STRING },
+                definition: { type: Type.STRING },
+                usageInLiterature: { type: Type.STRING },
+                linkedThemes: { type: Type.ARRAY, items: { type: Type.STRING } }
               }
-            },
-            underlyingTheories: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                required: ['theoryName', 'corePremise', 'keyProponents', 'applicationContext'],
-                properties: {
-                  theoryName: { type: Type.STRING },
-                  corePremise: { type: Type.STRING },
-                  keyProponents: { type: Type.STRING },
-                  applicationContext: { type: Type.STRING }
-                }
+            }
+          },
+          underlyingTheories: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              required: ['theoryName', 'corePremise', 'keyProponents', 'applicationContext'],
+              properties: {
+                theoryName: { type: Type.STRING },
+                corePremise: { type: Type.STRING },
+                keyProponents: { type: Type.STRING },
+                applicationContext: { type: Type.STRING }
               }
-            },
-            methodologiesUsed: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                required: ['methodologyName', 'type', 'description', 'strengths', 'limitations'],
-                properties: {
-                  methodologyName: { type: Type.STRING },
-                  type: { type: Type.STRING },
-                  description: { type: Type.STRING },
-                  strengths: { type: Type.STRING },
-                  limitations: { type: Type.STRING }
-                }
+            }
+          },
+          methodologiesUsed: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              required: ['methodologyName', 'type', 'description', 'strengths', 'limitations'],
+              properties: {
+                methodologyName: { type: Type.STRING },
+                type: { type: Type.STRING },
+                description: { type: Type.STRING },
+                strengths: { type: Type.STRING },
+                limitations: { type: Type.STRING }
               }
-            },
-            mappedRelationships: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                required: ['source', 'target', 'relationshipType', 'explanation'],
-                properties: {
-                  source: { type: Type.STRING },
-                  target: { type: Type.STRING },
-                  relationshipType: { type: Type.STRING },
-                  explanation: { type: Type.STRING }
-                }
+            }
+          },
+          mappedRelationships: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              required: ['source', 'target', 'relationshipType', 'explanation'],
+              properties: {
+                source: { type: Type.STRING },
+                target: { type: Type.STRING },
+                relationshipType: { type: Type.STRING },
+                explanation: { type: Type.STRING }
               }
-            },
-            schoolsOfThought: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                required: ['schoolName', 'coreTenet', 'keyAuthors', 'distinguishingAssumptions'],
-                properties: {
-                  schoolName: { type: Type.STRING },
-                  coreTenet: { type: Type.STRING },
-                  keyAuthors: { type: Type.STRING },
-                  distinguishingAssumptions: { type: Type.STRING }
-                }
+            }
+          },
+          schoolsOfThought: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              required: ['schoolName', 'coreTenet', 'keyAuthors', 'distinguishingAssumptions'],
+              properties: {
+                schoolName: { type: Type.STRING },
+                coreTenet: { type: Type.STRING },
+                keyAuthors: { type: Type.STRING },
+                distinguishingAssumptions: { type: Type.STRING }
               }
-            },
-            establishedFindings: { type: Type.ARRAY, items: { type: Type.STRING } },
-            emergingDebates: { type: Type.ARRAY, items: { type: Type.STRING } },
-            unresolvedQuestions: { type: Type.ARRAY, items: { type: Type.STRING } }
-          }
+            }
+          },
+          establishedFindings: { type: Type.ARRAY, items: { type: Type.STRING } },
+          emergingDebates: { type: Type.ARRAY, items: { type: Type.STRING } },
+          unresolvedQuestions: { type: Type.ARRAY, items: { type: Type.STRING } }
         }
       }
     });
 
-    const connectionsData = JSON.parse(response.text || '{}');
-    res.json(connectionsData);
+    res.status(result.status).json(result.body);
   } catch (error: any) {
     console.error('Error in /api/gemini/connect-literature:', error);
     res.status(500).json({ error: error.message || 'Failed to synthesize literature' });
@@ -683,35 +829,37 @@ app.post('/api/gemini/chat', async (req, res) => {
       return res.status(400).json({ error: 'Message is required' });
     }
 
-    const ai = getGeminiClient();
-    
     // Construct contents matching GoogleGenAI format
     const formattedHistory = (history || []).map((h: any) => ({
       role: h.role === 'model' ? 'model' : 'user',
       parts: [{ text: h.text || '' }]
     }));
-    
+
     const contents = [
       ...formattedHistory,
       { role: 'user', parts: [{ text: message }] }
     ];
 
-    const systemInstruction = `You are an exceptional, wise, encouraging, and academically rigorous PhD supervisor and scholarly research companion. 
+    // Local-runtime route only accepts a flat prompt string, so build a plain
+    // transcript for that path; the cloud route uses the richer `contents` array.
+    const transcriptPrompt = [
+      ...(history || []).map((h: any) => `${h.role === 'model' ? 'Assistant' : 'User'}: ${h.text || ''}`),
+      `User: ${message}`
+    ].join('\n');
+
+    const result = await runAiTask({
+      taskName: 'chat',
+      reqBody: req.body,
+      isJsonTask: false,
+      systemInstruction: `You are an exceptional, wise, encouraging, and academically rigorous PhD supervisor and scholarly research companion. 
 Your goal is to guide the researcher on their academic journey with clarity, compassion, and structured thinking.
-Maintain strict academic integrity. Always remain supportive, practical, calming, and non-shaming. 
-
-${RESEARCH_INTEGRITY_INSTRUCTION}
-${customGuidance ? `\nAdditional researcher directives:\n${customGuidance}` : ''}`;
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash',
-      contents: contents,
-      config: {
-        systemInstruction,
-      }
+Maintain strict academic integrity. Always remain supportive, practical, calming, and non-shaming.
+${customGuidance ? `\nAdditional researcher directives:\n${customGuidance}` : ''}`,
+      buildPrompt: () => transcriptPrompt,
+      contents,
     });
 
-    res.json({ text: response.text });
+    res.status(result.status).json(result.status === 200 ? { text: result.body.text, _processing: result.body._processing } : result.body);
   } catch (error: any) {
     console.error('Error in /api/gemini/chat:', error);
     res.status(500).json({ error: error.message || 'Failed to chat with AI companion' });
@@ -730,8 +878,11 @@ app.post('/api/gemini/research-intelligence/evidence-map', async (req, res) => {
       `Title: ${p.title} | Authors: ${p.authors} | Year: ${p.year} | Findings: ${p.structuredSummary?.findings || p.abstract || p.notes || 'N/A'} | Methods: ${p.structuredSummary?.methods || 'N/A'} | Limitations: ${p.structuredSummary?.limitations || 'N/A'}`
     ).join('\n');
 
-    const ai = getGeminiClient();
-    const prompt = `Perform an Evidence Mapping Analysis for the Research Question: "${researchQuestion}".
+    const result = await runAiTask({
+      taskName: 'evidence-map',
+      reqBody: req.body,
+      systemInstruction: 'You are an evidence synthesis expert. You objectively evaluate literature evidence strength, map support vs challenge, and highlight evidence gaps.',
+      buildPrompt: () => `Perform an Evidence Mapping Analysis for the Research Question: "${researchQuestion}".
 ${query ? `Specific user query focus: "${query}"` : ''}
 
 Available local library sources:
@@ -744,54 +895,46 @@ Extract and organize:
 4. Methodological limitations across the corpus.
 5. Major areas of consensus.
 6. Major areas of disagreement.
-7. Critical evidence gaps remaining in this literature.`;
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash',
-      contents: prompt,
-      config: {
-        systemInstruction: 'You are an evidence synthesis expert. You objectively evaluate literature evidence strength, map support vs challenge, and highlight evidence gaps.',
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.OBJECT,
-          required: ['researchQuestion', 'supportingLiterature', 'opposingLiterature', 'methodologicalStrengths', 'methodologicalLimitations', 'areasOfConsensus', 'areasOfDisagreement', 'evidenceGaps'],
-          properties: {
-            researchQuestion: { type: Type.STRING },
-            supportingLiterature: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                required: ['paperTitle', 'keyPoints', 'strength'],
-                properties: {
-                  paperTitle: { type: Type.STRING },
-                  keyPoints: { type: Type.STRING },
-                  strength: { type: Type.STRING }
-                }
+7. Critical evidence gaps remaining in this literature.`,
+      schema: {
+        type: Type.OBJECT,
+        required: ['researchQuestion', 'supportingLiterature', 'opposingLiterature', 'methodologicalStrengths', 'methodologicalLimitations', 'areasOfConsensus', 'areasOfDisagreement', 'evidenceGaps'],
+        properties: {
+          researchQuestion: { type: Type.STRING },
+          supportingLiterature: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              required: ['paperTitle', 'keyPoints', 'strength'],
+              properties: {
+                paperTitle: { type: Type.STRING },
+                keyPoints: { type: Type.STRING },
+                strength: { type: Type.STRING }
               }
-            },
-            opposingLiterature: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                required: ['paperTitle', 'keyPoints', 'limitation'],
-                properties: {
-                  paperTitle: { type: Type.STRING },
-                  keyPoints: { type: Type.STRING },
-                  limitation: { type: Type.STRING }
-                }
+            }
+          },
+          opposingLiterature: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              required: ['paperTitle', 'keyPoints', 'limitation'],
+              properties: {
+                paperTitle: { type: Type.STRING },
+                keyPoints: { type: Type.STRING },
+                limitation: { type: Type.STRING }
               }
-            },
-            methodologicalStrengths: { type: Type.ARRAY, items: { type: Type.STRING } },
-            methodologicalLimitations: { type: Type.ARRAY, items: { type: Type.STRING } },
-            areasOfConsensus: { type: Type.ARRAY, items: { type: Type.STRING } },
-            areasOfDisagreement: { type: Type.ARRAY, items: { type: Type.STRING } },
-            evidenceGaps: { type: Type.ARRAY, items: { type: Type.STRING } }
-          }
+            }
+          },
+          methodologicalStrengths: { type: Type.ARRAY, items: { type: Type.STRING } },
+          methodologicalLimitations: { type: Type.ARRAY, items: { type: Type.STRING } },
+          areasOfConsensus: { type: Type.ARRAY, items: { type: Type.STRING } },
+          areasOfDisagreement: { type: Type.ARRAY, items: { type: Type.STRING } },
+          evidenceGaps: { type: Type.ARRAY, items: { type: Type.STRING } }
         }
       }
     });
 
-    res.json(JSON.parse(response.text || '{}'));
+    res.status(result.status).json(result.body);
   } catch (error: any) {
     console.error('Error in /api/gemini/research-intelligence/evidence-map:', error);
     res.status(500).json({ error: error.message || 'Failed to generate evidence map' });
@@ -806,8 +949,11 @@ app.post('/api/gemini/research-intelligence/question-development', async (req, r
       return res.status(400).json({ error: 'Topic is required' });
     }
 
-    const ai = getGeminiClient();
-    const prompt = `Help refine the broad research topic into precise, answerable research questions.
+    const result = await runAiTask({
+      taskName: 'question-development',
+      reqBody: req.body,
+      systemInstruction: 'You are a senior academic advisor specializing in research design and problem formulation. You explain why questions matter and what knowledge gap they address.',
+      buildPrompt: () => `Help refine the broad research topic into precise, answerable research questions.
 Topic: "${topic}"
 Additional Context / Domain Notes: "${contextNote || 'None provided'}"
 
@@ -815,40 +961,32 @@ For this topic:
 1. Refine broad topic into 3-4 specific researchable questions.
 2. For each question, explain WHY it matters, WHAT specific gap in knowledge it addresses, and whether it is realistically answerable versus purely theoretical.
 3. Identify overlooked communities, geographical contexts, socio-cultural angles, or unexamined variables.
-4. Suggest alternative interdisciplinary perspectives (e.g., historical, structural, behavioral, economic).`;
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash',
-      contents: prompt,
-      config: {
-        systemInstruction: 'You are a senior academic advisor specializing in research design and problem formulation. You explain why questions matter and what knowledge gap they address.',
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.OBJECT,
-          required: ['originalTopic', 'refinedQuestions', 'overlookedContextsOrVariables', 'suggestedAlternativePerspectives'],
-          properties: {
-            originalTopic: { type: Type.STRING },
-            refinedQuestions: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                required: ['questionText', 'whyItMatters', 'gapAddressed', 'isAnswerable'],
-                properties: {
-                  questionText: { type: Type.STRING },
-                  whyItMatters: { type: Type.STRING },
-                  gapAddressed: { type: Type.STRING },
-                  isAnswerable: { type: Type.BOOLEAN }
-                }
+4. Suggest alternative interdisciplinary perspectives (e.g., historical, structural, behavioral, economic).`,
+      schema: {
+        type: Type.OBJECT,
+        required: ['originalTopic', 'refinedQuestions', 'overlookedContextsOrVariables', 'suggestedAlternativePerspectives'],
+        properties: {
+          originalTopic: { type: Type.STRING },
+          refinedQuestions: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              required: ['questionText', 'whyItMatters', 'gapAddressed', 'isAnswerable'],
+              properties: {
+                questionText: { type: Type.STRING },
+                whyItMatters: { type: Type.STRING },
+                gapAddressed: { type: Type.STRING },
+                isAnswerable: { type: Type.BOOLEAN }
               }
-            },
-            overlookedContextsOrVariables: { type: Type.ARRAY, items: { type: Type.STRING } },
-            suggestedAlternativePerspectives: { type: Type.ARRAY, items: { type: Type.STRING } }
-          }
+            }
+          },
+          overlookedContextsOrVariables: { type: Type.ARRAY, items: { type: Type.STRING } },
+          suggestedAlternativePerspectives: { type: Type.ARRAY, items: { type: Type.STRING } }
         }
       }
     });
 
-    res.json(JSON.parse(response.text || '{}'));
+    res.status(result.status).json(result.body);
   } catch (error: any) {
     console.error('Error in /api/gemini/research-intelligence/question-development:', error);
     res.status(500).json({ error: error.message || 'Failed to refine research questions' });
@@ -863,8 +1001,11 @@ app.post('/api/gemini/research-intelligence/data-pattern-analysis', async (req, 
       return res.status(400).json({ error: 'Data or literature text is required' });
     }
 
-    const ai = getGeminiClient();
-    const prompt = `Perform descriptive pattern and dataset analysis.
+    const result = await runAiTask({
+      taskName: 'data-pattern-analysis',
+      reqBody: req.body,
+      systemInstruction: 'You are a quantitative and qualitative data intelligence specialist. You identify patterns, anomalies, and variable relationships, explaining them clearly.',
+      buildPrompt: () => `Perform descriptive pattern and dataset analysis.
 Dataset / Text Title: "${datasetName || 'Structured Research Input'}"
 
 Input Content:
@@ -880,47 +1021,39 @@ Analyze for:
 5. Trends over time or progression across subsets.
 6. Relationships between variables (Variable A, Variable B, relationship type, description).
 7. Underexplored areas or missing data dimensions.
-8. Generate 4-6 chart data points (label, numeric value, category) to visualize main distributions or themes.`;
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash',
-      contents: prompt,
-      config: {
-        systemInstruction: 'You are a quantitative and qualitative data intelligence specialist. You identify patterns, anomalies, and variable relationships, explaining them clearly.',
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.OBJECT,
-          required: ['summary', 'recurringThemes', 'unexpectedConnections', 'contradictions', 'trendsOverTime', 'variableRelationships', 'underexploredAreas', 'chartData'],
-          properties: {
-            summary: { type: Type.STRING },
-            recurringThemes: { type: Type.ARRAY, items: { type: Type.STRING } },
-            unexpectedConnections: { type: Type.ARRAY, items: { type: Type.STRING } },
-            contradictions: { type: Type.ARRAY, items: { type: Type.STRING } },
-            trendsOverTime: { type: Type.ARRAY, items: { type: Type.STRING } },
-            variableRelationships: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                required: ['varA', 'varB', 'relationshipType', 'description'],
-                properties: {
-                  varA: { type: Type.STRING },
-                  varB: { type: Type.STRING },
-                  relationshipType: { type: Type.STRING },
-                  description: { type: Type.STRING }
-                }
+8. Generate 4-6 chart data points (label, numeric value, category) to visualize main distributions or themes.`,
+      schema: {
+        type: Type.OBJECT,
+        required: ['summary', 'recurringThemes', 'unexpectedConnections', 'contradictions', 'trendsOverTime', 'variableRelationships', 'underexploredAreas', 'chartData'],
+        properties: {
+          summary: { type: Type.STRING },
+          recurringThemes: { type: Type.ARRAY, items: { type: Type.STRING } },
+          unexpectedConnections: { type: Type.ARRAY, items: { type: Type.STRING } },
+          contradictions: { type: Type.ARRAY, items: { type: Type.STRING } },
+          trendsOverTime: { type: Type.ARRAY, items: { type: Type.STRING } },
+          variableRelationships: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              required: ['varA', 'varB', 'relationshipType', 'description'],
+              properties: {
+                varA: { type: Type.STRING },
+                varB: { type: Type.STRING },
+                relationshipType: { type: Type.STRING },
+                description: { type: Type.STRING }
               }
-            },
-            underexploredAreas: { type: Type.ARRAY, items: { type: Type.STRING } },
-            chartData: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                required: ['label', 'value'],
-                properties: {
-                  label: { type: Type.STRING },
-                  value: { type: Type.NUMBER },
-                  category: { type: Type.STRING }
-                }
+            }
+          },
+          underexploredAreas: { type: Type.ARRAY, items: { type: Type.STRING } },
+          chartData: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              required: ['label', 'value'],
+              properties: {
+                label: { type: Type.STRING },
+                value: { type: Type.NUMBER },
+                category: { type: Type.STRING }
               }
             }
           }
@@ -928,7 +1061,7 @@ Analyze for:
       }
     });
 
-    res.json(JSON.parse(response.text || '{}'));
+    res.status(result.status).json(result.body);
   } catch (error: any) {
     console.error('Error in /api/gemini/research-intelligence/data-pattern-analysis:', error);
     res.status(500).json({ error: error.message || 'Failed to analyze data patterns' });
@@ -943,8 +1076,11 @@ app.post('/api/gemini/research-intelligence/critical-partner', async (req, res) 
       return res.status(400).json({ error: 'Statement or claim is required' });
     }
 
-    const ai = getGeminiClient();
-    const prompt = `Act as a constructive critical colleague and scholarly peer reviewer.
+    const result = await runAiTask({
+      taskName: 'critical-partner',
+      reqBody: req.body,
+      systemInstruction: 'You are a constructive, highly respectful, but sharp academic critical colleague. You challenge assumptions, test sample boundaries, and help researchers strengthen their work through constructive questioning.',
+      buildPrompt: () => `Act as a constructive critical colleague and scholarly peer reviewer.
 Evaluate this hypothesis, conclusion, or research statement:
 "${statementOrClaim}"
 
@@ -962,42 +1098,34 @@ Before accepting this conclusion:
    - Question: what critical question needs testing?
    - Listen: what alternative viewpoint is speaking?
    - Reconsider: how does the hypothesis evolve?
-   - Choose: what is the most defensible choice?`;
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash',
-      contents: prompt,
-      config: {
-        systemInstruction: 'You are a constructive, highly respectful, but sharp academic critical colleague. You challenge assumptions, test sample boundaries, and help researchers strengthen their work through constructive questioning.',
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.OBJECT,
-          required: ['interpretationChecked', 'underpinningAssumptions', 'unstatedPremises', 'sampleOrContextLimitations', 'counterArgumentsToConsider', 'constructiveReframing', 'secondThoughtSteps'],
-          properties: {
-            interpretationChecked: { type: Type.STRING },
-            underpinningAssumptions: { type: Type.ARRAY, items: { type: Type.STRING } },
-            unstatedPremises: { type: Type.ARRAY, items: { type: Type.STRING } },
-            sampleOrContextLimitations: { type: Type.ARRAY, items: { type: Type.STRING } },
-            counterArgumentsToConsider: { type: Type.ARRAY, items: { type: Type.STRING } },
-            constructiveReframing: { type: Type.STRING },
-            secondThoughtSteps: {
-              type: Type.OBJECT,
-              required: ['notice', 'pause', 'question', 'listen', 'reconsider', 'choose'],
-              properties: {
-                notice: { type: Type.STRING },
-                pause: { type: Type.STRING },
-                question: { type: Type.STRING },
-                listen: { type: Type.STRING },
-                reconsider: { type: Type.STRING },
-                choose: { type: Type.STRING }
-              }
+   - Choose: what is the most defensible choice?`,
+      schema: {
+        type: Type.OBJECT,
+        required: ['interpretationChecked', 'underpinningAssumptions', 'unstatedPremises', 'sampleOrContextLimitations', 'counterArgumentsToConsider', 'constructiveReframing', 'secondThoughtSteps'],
+        properties: {
+          interpretationChecked: { type: Type.STRING },
+          underpinningAssumptions: { type: Type.ARRAY, items: { type: Type.STRING } },
+          unstatedPremises: { type: Type.ARRAY, items: { type: Type.STRING } },
+          sampleOrContextLimitations: { type: Type.ARRAY, items: { type: Type.STRING } },
+          counterArgumentsToConsider: { type: Type.ARRAY, items: { type: Type.STRING } },
+          constructiveReframing: { type: Type.STRING },
+          secondThoughtSteps: {
+            type: Type.OBJECT,
+            required: ['notice', 'pause', 'question', 'listen', 'reconsider', 'choose'],
+            properties: {
+              notice: { type: Type.STRING },
+              pause: { type: Type.STRING },
+              question: { type: Type.STRING },
+              listen: { type: Type.STRING },
+              reconsider: { type: Type.STRING },
+              choose: { type: Type.STRING }
             }
           }
         }
       }
     });
 
-    res.json(JSON.parse(response.text || '{}'));
+    res.status(result.status).json(result.body);
   } catch (error: any) {
     console.error('Error in /api/gemini/research-intelligence/critical-partner:', error);
     res.status(500).json({ error: error.message || 'Failed critical partner evaluation' });
@@ -1017,7 +1145,11 @@ app.post('/api/gemini/publishing/reflective-review', async (req, res) => {
       ? papersInLibrary.map((p: any) => `- "${p.title}" by ${p.authors} (${p.year})`).join('\n')
       : 'No reference library papers provided';
 
-    const prompt = `Perform a constructive, reflective review of the following author-written text.
+    const result = await runAiTask({
+      taskName: 'reflective-review',
+      reqBody: req.body,
+      systemInstruction: 'You are an empathetic, intellectually rigorous scholarly editor and writing mentor. You NEVER overwrite or generate full author prose. You guide human authors with reflective questions, logic checks, and editorial critique.',
+      buildPrompt: () => `Perform a constructive, reflective review of the following author-written text.
 
 CRITICAL MANDATE:
 Do NOT rewrite the author's work or generate replacement text. Your goal is to support human authorship by providing reflective critique, asking probing questions, identifying gaps, and offering suggestions.
@@ -1038,52 +1170,43 @@ Evaluate for:
 4. Terminology Inconsistencies: Highlight conflicting or ambiguous terms used in the draft.
 5. Reasoning Gaps: Point out logical leaps, unstated assumptions, or claims that require stronger evidentiary backing.
 6. Accessibility & Plain Language: Advice on making complex concepts clearer without losing precision.
-7. Literature & Citation Alignment: Assessment of how well claims align with or could be strengthened by the user's reference library.`;
-
-    const ai = getGeminiClient();
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash',
-      contents: prompt,
-      config: {
-        systemInstruction: 'You are an empathetic, intellectually rigorous scholarly editor and writing mentor. You NEVER overwrite or generate full author prose. You guide human authors with reflective questions, logic checks, and editorial critique.',
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.OBJECT,
-          required: [
-            'humanAuthorshipConfirmation',
-            'readabilityFeedback',
-            'reflectiveQuestions',
-            'terminologyInconsistencies',
-            'reasoningGaps',
-            'accessibilitySuggestions',
-            'literatureAlignment'
-          ],
-          properties: {
-            humanAuthorshipConfirmation: { type: Type.STRING },
-            readabilityFeedback: { type: Type.STRING },
-            reflectiveQuestions: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING }
-            },
-            terminologyInconsistencies: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING }
-            },
-            reasoningGaps: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING }
-            },
-            accessibilitySuggestions: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING }
-            },
-            literatureAlignment: { type: Type.STRING }
-          }
+7. Literature & Citation Alignment: Assessment of how well claims align with or could be strengthened by the user's reference library.`,
+      schema: {
+        type: Type.OBJECT,
+        required: [
+          'humanAuthorshipConfirmation',
+          'readabilityFeedback',
+          'reflectiveQuestions',
+          'terminologyInconsistencies',
+          'reasoningGaps',
+          'accessibilitySuggestions',
+          'literatureAlignment'
+        ],
+        properties: {
+          humanAuthorshipConfirmation: { type: Type.STRING },
+          readabilityFeedback: { type: Type.STRING },
+          reflectiveQuestions: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING }
+          },
+          terminologyInconsistencies: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING }
+          },
+          reasoningGaps: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING }
+          },
+          accessibilitySuggestions: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING }
+          },
+          literatureAlignment: { type: Type.STRING }
         }
       }
     });
 
-    res.json(JSON.parse(response.text || '{}'));
+    res.status(result.status).json(result.body);
   } catch (error: any) {
     console.error('Error in /api/gemini/publishing/reflective-review:', error);
     res.status(500).json({ error: error.message || 'Failed to conduct reflective review' });
@@ -1095,7 +1218,11 @@ app.post('/api/gemini/publishing/format-guidance', async (req, res) => {
   try {
     const { targetVenue, publicationType } = req.body;
 
-    const prompt = `Provide publishing preparation guidance and compliance recommendations for manuscript submission.
+    const result = await runAiTask({
+      taskName: 'format-guidance',
+      reqBody: req.body,
+      systemInstruction: 'You are an open-access scholarly publisher and editorial consultant. You provide clear, practical submission and formatting guidelines tailored for open-source workflows.',
+      buildPrompt: () => `Provide publishing preparation guidance and compliance recommendations for manuscript submission.
 
 Target Publisher / Journal / Venue: "${targetVenue || 'Open Access Monograph'}"
 Publication Type: "${publicationType || 'Journal Article'}"
@@ -1105,30 +1232,21 @@ Provide:
 2. Key formatting guidelines (font styles, line spacing, headings hierarchy, citation style, abstract limits).
 3. Publisher compliance checklist (ORCID, Open Access licensing, ethics statement, data availability statement, figure requirements).
 4. Accessibility preparation checklist (Alt-text for images, heading hierarchy, PDF/UA compliance, readable font choices).
-5. Open-source tool advice (LibreOffice Writer, ONLYOFFICE, Pandoc/Markdown tips).`;
-
-    const ai = getGeminiClient();
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash',
-      contents: prompt,
-      config: {
-        systemInstruction: 'You are an open-access scholarly publisher and editorial consultant. You provide clear, practical submission and formatting guidelines tailored for open-source workflows.',
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.OBJECT,
-          required: ['recommendedStructure', 'formattingGuidelines', 'complianceChecklist', 'accessibilityChecklist', 'openSourceToolAdvice'],
-          properties: {
-            recommendedStructure: { type: Type.ARRAY, items: { type: Type.STRING } },
-            formattingGuidelines: { type: Type.ARRAY, items: { type: Type.STRING } },
-            complianceChecklist: { type: Type.ARRAY, items: { type: Type.STRING } },
-            accessibilityChecklist: { type: Type.ARRAY, items: { type: Type.STRING } },
-            openSourceToolAdvice: { type: Type.ARRAY, items: { type: Type.STRING } }
-          }
+5. Open-source tool advice (LibreOffice Writer, ONLYOFFICE, Pandoc/Markdown tips).`,
+      schema: {
+        type: Type.OBJECT,
+        required: ['recommendedStructure', 'formattingGuidelines', 'complianceChecklist', 'accessibilityChecklist', 'openSourceToolAdvice'],
+        properties: {
+          recommendedStructure: { type: Type.ARRAY, items: { type: Type.STRING } },
+          formattingGuidelines: { type: Type.ARRAY, items: { type: Type.STRING } },
+          complianceChecklist: { type: Type.ARRAY, items: { type: Type.STRING } },
+          accessibilityChecklist: { type: Type.ARRAY, items: { type: Type.STRING } },
+          openSourceToolAdvice: { type: Type.ARRAY, items: { type: Type.STRING } }
         }
       }
     });
 
-    res.json(JSON.parse(response.text || '{}'));
+    res.status(result.status).json(result.body);
   } catch (error: any) {
     console.error('Error in /api/gemini/publishing/format-guidance:', error);
     res.status(500).json({ error: error.message || 'Failed to generate publisher guidance' });
@@ -1148,7 +1266,11 @@ app.post('/api/gemini/publishing/paragraph-logic-gap', async (req, res) => {
       ? papersInLibrary.map((p: any) => `- "${p.title}" by ${p.authors} (${p.year}): ${p.summary || p.abstract || 'Reference'}`).join('\n')
       : 'No reference library papers provided';
 
-    const prompt = `Analyze the following SPECIFIC PARAGRAPH from an author's manuscript draft to detect logic gaps, coherence issues, and evidential support needs.
+    const result = await runAiTask({
+      taskName: 'paragraph-logic-gap',
+      reqBody: req.body,
+      systemInstruction: 'You are a scholarly peer-reviewer and critical logic coach. You evaluate user paragraphs for logical coherence, evidential backing, and implicit assumptions. You ask deep, reflective questions that honor human authorship.',
+      buildPrompt: () => `Analyze the following SPECIFIC PARAGRAPH from an author's manuscript draft to detect logic gaps, coherence issues, and evidential support needs.
 
 CRITICAL DIRECTIVE:
 You are a critical thinking partner and scholarly writing mentor. You MUST NOT rewrite the paragraph or supply replacement prose. Your sole purpose is to ask reflective, probing questions that help the author recognize missing links, unbacked assertions, or logical leaps.
@@ -1172,50 +1294,41 @@ Evaluate this paragraph for:
 3. Identified Logic Gaps: Specific logical leaps, unstated premises, or abrupt transitions within or into this paragraph.
 4. Evidential Support Needs: Claims made in this paragraph that require empirical citations, data, or logical justification.
 5. Reflective Questions for the Author: 3-4 specific, thought-provoking questions that guide the author to reflect on, clarify, or deepen their reasoning.
-6. Library References to Consider: Relevant titles or authors from the available reference library that could support or connect with this paragraph's assertions.`;
-
-    const ai = getGeminiClient();
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash',
-      contents: prompt,
-      config: {
-        systemInstruction: 'You are a scholarly peer-reviewer and critical logic coach. You evaluate user paragraphs for logical coherence, evidential backing, and implicit assumptions. You ask deep, reflective questions that honor human authorship.',
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.OBJECT,
-          required: [
-            'coreAssertion',
-            'coherenceRating',
-            'identifiedLogicGaps',
-            'evidentialSupportNeeds',
-            'reflectiveQuestions',
-            'libraryReferencesToConsider'
-          ],
-          properties: {
-            coreAssertion: { type: Type.STRING },
-            coherenceRating: { type: Type.STRING },
-            identifiedLogicGaps: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING }
-            },
-            evidentialSupportNeeds: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING }
-            },
-            reflectiveQuestions: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING }
-            },
-            libraryReferencesToConsider: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING }
-            }
+6. Library References to Consider: Relevant titles or authors from the available reference library that could support or connect with this paragraph's assertions.`,
+      schema: {
+        type: Type.OBJECT,
+        required: [
+          'coreAssertion',
+          'coherenceRating',
+          'identifiedLogicGaps',
+          'evidentialSupportNeeds',
+          'reflectiveQuestions',
+          'libraryReferencesToConsider'
+        ],
+        properties: {
+          coreAssertion: { type: Type.STRING },
+          coherenceRating: { type: Type.STRING },
+          identifiedLogicGaps: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING }
+          },
+          evidentialSupportNeeds: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING }
+          },
+          reflectiveQuestions: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING }
+          },
+          libraryReferencesToConsider: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING }
           }
         }
       }
     });
 
-    res.json(JSON.parse(response.text || '{}'));
+    res.status(result.status).json(result.body);
   } catch (error: any) {
     console.error('Error in /api/gemini/publishing/paragraph-logic-gap:', error);
     res.status(500).json({ error: error.message || 'Failed to perform paragraph logic gap analysis' });
@@ -1231,7 +1344,11 @@ app.post('/api/gemini/publishing/repetition-and-fragments', async (req, res) => 
       return res.status(400).json({ error: 'Draft text is required for editorial awareness scan.' });
     }
 
-    const prompt = `Perform a comprehensive editorial awareness scan of the following manuscript draft to empower the human author to refine their own writing.
+    const result = await runAiTask({
+      taskName: 'repetition-and-fragments',
+      reqBody: req.body,
+      systemInstruction: 'You are a master scholarly editor and writing quality coach. You identify repetitions, incomplete thoughts, and clarity issues without ever overwriting the human author’s voice.',
+      buildPrompt: () => `Perform a comprehensive editorial awareness scan of the following manuscript draft to empower the human author to refine their own writing.
 
 CRITICAL MANDATE:
 Do NOT rewrite the author's prose or supply replacement paragraphs. Your sole role is an insightful editorial mentor: point out issues, explain why they affect clarity/flow, and ask reflective prompts that invite the author to make their own decisions.
@@ -1250,103 +1367,94 @@ ANALYZE THE DRAFT FOR:
 MANUSCRIPT DRAFT TO SCAN:
 """
 ${draftText}
-"""`;
-
-    const ai = getGeminiClient();
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash',
-      contents: prompt,
-      config: {
-        systemInstruction: 'You are a master scholarly editor and writing quality coach. You identify repetitions, incomplete thoughts, and clarity issues without ever overwriting the human author’s voice.',
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.OBJECT,
-          required: [
-            'editorialSummaryNote',
-            'repeatedWordsAndPhrases',
-            'repeatedIdeasAndConcepts',
-            'unfinishedSentencesAndFragments',
-            'unclearOrComplexSentences',
-            'abruptTransitions',
-            'accessibilityAndTermConsistency'
-          ],
-          properties: {
-            editorialSummaryNote: { type: Type.STRING },
-            repeatedWordsAndPhrases: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                required: ['wordOrPhrase', 'locations', 'clarityImpact', 'suggestionForUser'],
-                properties: {
-                  wordOrPhrase: { type: Type.STRING },
-                  locations: { type: Type.STRING },
-                  clarityImpact: { type: Type.STRING },
-                  suggestionForUser: { type: Type.STRING }
-                }
+"""`,
+      schema: {
+        type: Type.OBJECT,
+        required: [
+          'editorialSummaryNote',
+          'repeatedWordsAndPhrases',
+          'repeatedIdeasAndConcepts',
+          'unfinishedSentencesAndFragments',
+          'unclearOrComplexSentences',
+          'abruptTransitions',
+          'accessibilityAndTermConsistency'
+        ],
+        properties: {
+          editorialSummaryNote: { type: Type.STRING },
+          repeatedWordsAndPhrases: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              required: ['wordOrPhrase', 'locations', 'clarityImpact', 'suggestionForUser'],
+              properties: {
+                wordOrPhrase: { type: Type.STRING },
+                locations: { type: Type.STRING },
+                clarityImpact: { type: Type.STRING },
+                suggestionForUser: { type: Type.STRING }
               }
-            },
-            repeatedIdeasAndConcepts: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                required: ['concept', 'locations', 'whyItAffectsClarity', 'reflectiveQuestion'],
-                properties: {
-                  concept: { type: Type.STRING },
-                  locations: { type: Type.STRING },
-                  whyItAffectsClarity: { type: Type.STRING },
-                  reflectiveQuestion: { type: Type.STRING }
-                }
+            }
+          },
+          repeatedIdeasAndConcepts: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              required: ['concept', 'locations', 'whyItAffectsClarity', 'reflectiveQuestion'],
+              properties: {
+                concept: { type: Type.STRING },
+                locations: { type: Type.STRING },
+                whyItAffectsClarity: { type: Type.STRING },
+                reflectiveQuestion: { type: Type.STRING }
               }
-            },
-            unfinishedSentencesAndFragments: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                required: ['fragmentText', 'location', 'problemInterpretation', 'userCompletionPrompt'],
-                properties: {
-                  fragmentText: { type: Type.STRING },
-                  location: { type: Type.STRING },
-                  problemInterpretation: { type: Type.STRING },
-                  userCompletionPrompt: { type: Type.STRING }
-                }
+            }
+          },
+          unfinishedSentencesAndFragments: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              required: ['fragmentText', 'location', 'problemInterpretation', 'userCompletionPrompt'],
+              properties: {
+                fragmentText: { type: Type.STRING },
+                location: { type: Type.STRING },
+                problemInterpretation: { type: Type.STRING },
+                userCompletionPrompt: { type: Type.STRING }
               }
-            },
-            unclearOrComplexSentences: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                required: ['sentenceText', 'location', 'complexityIssue', 'reflectionPrompt'],
-                properties: {
-                  sentenceText: { type: Type.STRING },
-                  location: { type: Type.STRING },
-                  complexityIssue: { type: Type.STRING },
-                  reflectionPrompt: { type: Type.STRING }
-                }
+            }
+          },
+          unclearOrComplexSentences: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              required: ['sentenceText', 'location', 'complexityIssue', 'reflectionPrompt'],
+              properties: {
+                sentenceText: { type: Type.STRING },
+                location: { type: Type.STRING },
+                complexityIssue: { type: Type.STRING },
+                reflectionPrompt: { type: Type.STRING }
               }
-            },
-            abruptTransitions: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                required: ['transitionLocation', 'issueDescription', 'smoothingQuestion'],
-                properties: {
-                  transitionLocation: { type: Type.STRING },
-                  issueDescription: { type: Type.STRING },
-                  smoothingQuestion: { type: Type.STRING }
-                }
+            }
+          },
+          abruptTransitions: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              required: ['transitionLocation', 'issueDescription', 'smoothingQuestion'],
+              properties: {
+                transitionLocation: { type: Type.STRING },
+                issueDescription: { type: Type.STRING },
+                smoothingQuestion: { type: Type.STRING }
               }
-            },
-            accessibilityAndTermConsistency: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                required: ['termOrPhrase', 'issueType', 'accessibilityNote', 'suggestion'],
-                properties: {
-                  termOrPhrase: { type: Type.STRING },
-                  issueType: { type: Type.STRING },
-                  accessibilityNote: { type: Type.STRING },
-                  suggestion: { type: Type.STRING }
-                }
+            }
+          },
+          accessibilityAndTermConsistency: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              required: ['termOrPhrase', 'issueType', 'accessibilityNote', 'suggestion'],
+              properties: {
+                termOrPhrase: { type: Type.STRING },
+                issueType: { type: Type.STRING },
+                accessibilityNote: { type: Type.STRING },
+                suggestion: { type: Type.STRING }
               }
             }
           }
@@ -1354,7 +1462,7 @@ ${draftText}
       }
     });
 
-    res.json(JSON.parse(response.text || '{}'));
+    res.status(result.status).json(result.body);
   } catch (error: any) {
     console.error('Error in /api/gemini/publishing/repetition-and-fragments:', error);
     res.status(500).json({ error: error.message || 'Failed to spot repetitions and unfinished sentences' });
@@ -1379,8 +1487,13 @@ app.post('/api/gemini/publishing/extract-document-text', async (req, res) => {
       });
     }
 
-    // For raw binary / docx / pdf dumps, use Gemini to clean and structure into clean Markdown prose
-    const prompt = `You are a document conversion assistant. Clean up and extract the full readable body text from this document stream ("${fileName || 'Document'}"). Remove control characters, binary artifacts, or formatting corruption while preserving headings, paragraphs, bullet points, and human prose intact.
+    // For raw binary / docx / pdf dumps, use the AI task layer to clean and structure into Markdown prose
+    const result = await runAiTask({
+      taskName: 'extract-document-text',
+      reqBody: req.body,
+      systemInstruction: 'You are an expert document text parser. You extract clean, uncorrupted plain text and Markdown from raw uploaded documents.',
+      applyResearchIntegrity: false,
+      buildPrompt: () => `You are a document conversion assistant. Clean up and extract the full readable body text from this document stream ("${fileName || 'Document'}"). Remove control characters, binary artifacts, or formatting corruption while preserving headings, paragraphs, bullet points, and human prose intact.
 
 DOCUMENT INPUT / STREAM:
 """
@@ -1390,28 +1503,19 @@ ${rawContent.substring(0, 30000)}
 Provide your output in JSON format:
 1. extractedText: Clean, readable text/markdown of the full document content.
 2. title: Appropriate document title inferred from content or filename.
-3. summary: A brief 1-2 sentence description of what this document contains.`;
-
-    const ai = getGeminiClient();
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash',
-      contents: prompt,
-      config: {
-        systemInstruction: 'You are an expert document text parser. You extract clean, uncorrupted plain text and Markdown from raw uploaded documents.',
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.OBJECT,
-          required: ['extractedText', 'title', 'summary'],
-          properties: {
-            extractedText: { type: Type.STRING },
-            title: { type: Type.STRING },
-            summary: { type: Type.STRING }
-          }
+3. summary: A brief 1-2 sentence description of what this document contains.`,
+      schema: {
+        type: Type.OBJECT,
+        required: ['extractedText', 'title', 'summary'],
+        properties: {
+          extractedText: { type: Type.STRING },
+          title: { type: Type.STRING },
+          summary: { type: Type.STRING }
         }
       }
     });
 
-    res.json(JSON.parse(response.text || '{}'));
+    res.status(result.status).json(result.body);
   } catch (error: any) {
     console.error('Error in /api/gemini/publishing/extract-document-text:', error);
     res.status(500).json({ error: error.message || 'Failed to extract document text' });
@@ -1429,7 +1533,11 @@ app.post('/api/gemini/funding/assess-proposal', async (req, res) => {
     const criteriaText = Array.isArray(criteria) ? criteria.join('\n- ') : (criteria || 'Standard Funder Rigour, Innovation, Feasibility, and Impact criteria');
     const questionsText = Array.isArray(questions) ? questions.join('\n- ') : (questions || 'Standard Proposal Objectives, Methodology, Outreach & Impact, and Budget Justification');
 
-    const prompt = `Perform an in-depth academic grant proposal assessment evaluating the provided draft document against the funder's criteria and application questions.
+    const result = await runAiTask({
+      taskName: 'assess-proposal',
+      reqBody: req.body,
+      systemInstruction: 'You are a veteran grant review panel chair and expert evaluator. You assess research proposals with rigorous objectivity, highlighting exact adherence to funder requirements, evidential strength, and thematic relevance without overwriting the author voice.',
+      buildPrompt: () => `Perform an in-depth academic grant proposal assessment evaluating the provided draft document against the funder's criteria and application questions.
 
 FUNDER / SCHEME: "${funderName || 'General Research Funding Body'}"
 
@@ -1459,69 +1567,60 @@ Evaluate systematically for:
 3. CRITERIA COMPLIANCE (Compliant, Partially Met, Non-Compliant with direct citations from the draft).
 4. CORE STRENGTHS: Highlights where the draft excels.
 5. CRITICAL GAPS & RISKS: Specific blindspots, unbacked assertions, or missing compliance items that could lead to rejection.
-6. ACTIONABLE REVISION ROADMAP: Sequential checklist of concrete editorial and evidential enhancements for the researcher.`;
-
-    const ai = getGeminiClient();
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash',
-      contents: prompt,
-      config: {
-        systemInstruction: 'You are a veteran grant review panel chair and expert evaluator. You assess research proposals with rigorous objectivity, highlighting exact adherence to funder requirements, evidential strength, and thematic relevance without overwriting the author voice.',
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.OBJECT,
-          required: [
-            'overallAdherenceScore',
-            'adherenceVerdict',
-            'overallSummary',
-            'questionAssessments',
-            'criteriaCompliance',
-            'coreStrengths',
-            'criticalGapsAndRisks',
-            'revisionChecklist'
-          ],
-          properties: {
-            overallAdherenceScore: { type: Type.NUMBER },
-            adherenceVerdict: { type: Type.STRING },
-            overallSummary: { type: Type.STRING },
-            questionAssessments: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                required: ['question', 'adherence', 'strengthRating', 'relevanceRating', 'findings', 'missingElements', 'recommendation'],
-                properties: {
-                  question: { type: Type.STRING },
-                  adherence: { type: Type.STRING, description: 'Must be "Full", "Partial", or "Missing"' },
-                  strengthRating: { type: Type.STRING, description: 'Must be "High", "Moderate", or "Low"' },
-                  relevanceRating: { type: Type.STRING, description: 'Must be "High", "Moderate", or "Low"' },
-                  findings: { type: Type.STRING },
-                  missingElements: { type: Type.ARRAY, items: { type: Type.STRING } },
-                  recommendation: { type: Type.STRING }
-                }
+6. ACTIONABLE REVISION ROADMAP: Sequential checklist of concrete editorial and evidential enhancements for the researcher.`,
+      schema: {
+        type: Type.OBJECT,
+        required: [
+          'overallAdherenceScore',
+          'adherenceVerdict',
+          'overallSummary',
+          'questionAssessments',
+          'criteriaCompliance',
+          'coreStrengths',
+          'criticalGapsAndRisks',
+          'revisionChecklist'
+        ],
+        properties: {
+          overallAdherenceScore: { type: Type.NUMBER },
+          adherenceVerdict: { type: Type.STRING },
+          overallSummary: { type: Type.STRING },
+          questionAssessments: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              required: ['question', 'adherence', 'strengthRating', 'relevanceRating', 'findings', 'missingElements', 'recommendation'],
+              properties: {
+                question: { type: Type.STRING },
+                adherence: { type: Type.STRING, description: 'Must be "Full", "Partial", or "Missing"' },
+                strengthRating: { type: Type.STRING, description: 'Must be "High", "Moderate", or "Low"' },
+                relevanceRating: { type: Type.STRING, description: 'Must be "High", "Moderate", or "Low"' },
+                findings: { type: Type.STRING },
+                missingElements: { type: Type.ARRAY, items: { type: Type.STRING } },
+                recommendation: { type: Type.STRING }
               }
-            },
-            criteriaCompliance: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                required: ['criterion', 'status', 'evidence', 'recommendations'],
-                properties: {
-                  criterion: { type: Type.STRING },
-                  status: { type: Type.STRING, description: 'Must be "Compliant", "Partially Met", or "Non-Compliant"' },
-                  evidence: { type: Type.STRING },
-                  recommendations: { type: Type.STRING }
-                }
+            }
+          },
+          criteriaCompliance: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              required: ['criterion', 'status', 'evidence', 'recommendations'],
+              properties: {
+                criterion: { type: Type.STRING },
+                status: { type: Type.STRING, description: 'Must be "Compliant", "Partially Met", or "Non-Compliant"' },
+                evidence: { type: Type.STRING },
+                recommendations: { type: Type.STRING }
               }
-            },
-            coreStrengths: { type: Type.ARRAY, items: { type: Type.STRING } },
-            criticalGapsAndRisks: { type: Type.ARRAY, items: { type: Type.STRING } },
-            revisionChecklist: { type: Type.ARRAY, items: { type: Type.STRING } }
-          }
+            }
+          },
+          coreStrengths: { type: Type.ARRAY, items: { type: Type.STRING } },
+          criticalGapsAndRisks: { type: Type.ARRAY, items: { type: Type.STRING } },
+          revisionChecklist: { type: Type.ARRAY, items: { type: Type.STRING } }
         }
       }
     });
 
-    res.json(JSON.parse(response.text || '{}'));
+    res.status(result.status).json(result.body);
   } catch (error: any) {
     console.error('Error in /api/gemini/funding/assess-proposal:', error);
     res.status(500).json({ error: error.message || 'Failed to assess grant proposal' });

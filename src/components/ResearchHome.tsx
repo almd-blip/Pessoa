@@ -5,6 +5,7 @@
 
 import React, { useState } from 'react';
 import { ResearchJourney, Paper, MoodCheckIn } from '../types';
+import { postWithAiRouting } from '../lib/localAiService';
 
 interface ResearchHomeProps {
   journeys: ResearchJourney[];
@@ -146,15 +147,12 @@ export default function ResearchHome({
     setLoadingAdvisor(true);
 
     try {
-      // Consult Gemini on the server for mood-based academic advice
-      const res = await fetch('/api/gemini/advisor', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          moodState: state,
-          projectDetails: journeys[0] ? `${journeys[0].title}: ${journeys[0].description}` : 'Academic inquiry',
-          question: `I am feeling ${state} today. Please guide me.`,
-        }),
+      // Consult the AI advisor task for mood-based academic advice, routed
+      // through the shared AI task layer so it honours the user's provider choice.
+      const res = await postWithAiRouting('/api/gemini/advisor', {
+        moodState: state,
+        projectDetails: journeys[0] ? `${journeys[0].title}: ${journeys[0].description}` : 'Academic inquiry',
+        question: `I am feeling ${state} today. Please guide me.`,
       });
 
       if (res.ok) {
