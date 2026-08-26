@@ -45,9 +45,10 @@ Future-stage proposals and unresolved architectural questions should be recorded
 
 ### Known pre-existing issue — Research Intelligence route mismatch
 
-**Status:** Tracked, not fixed  
+**Status:** Fixed (see below)  
 **Date recorded:** 2026-08-25  
-**Scope:** Functional bug, not a P0 trust/routing concern. Out of scope for Stage 1.
+**Date fixed:** 2026-08-25  
+**Scope:** Functional bug, not a P0 trust/routing concern. Fixed as a standalone change, independent of Stage 1 and not on the p0-trust-hardening branch.
 
 `src/components/ResearchIntelligenceLayer.tsx` calls two client-side endpoint
 paths that do not match the corresponding server routes in `server.ts`:
@@ -57,15 +58,23 @@ paths that do not match the corresponding server routes in `server.ts`:
 | `/api/gemini/research-intelligence/question-dev` | `/api/gemini/research-intelligence/question-development` |
 | `/api/gemini/research-intelligence/pattern-analysis` | `/api/gemini/research-intelligence/data-pattern-analysis` |
 
-This mismatch predates the Stage 1 / P0 trust-hardening work and was
-identified during the P0 audit. It causes these two calls to 404 at
-runtime regardless of AI provider or routing configuration — it is a
-plain endpoint-naming bug, unrelated to local/cloud routing, provider
+This mismatch predated the Stage 1 / P0 trust-hardening work and was
+identified during the P0 audit. It caused these two calls to 404 at
+runtime regardless of AI provider or routing configuration — a plain
+endpoint-naming bug, unrelated to local/cloud routing, provider
 selection, credential handling, or output validation.
 
 It was deliberately left unfixed during P0 (both in the initial P0
 routing implementation and the subsequent autoFallback/strictOffline
 cleanup) per the instruction not to opportunistically fix unrelated
-issues encountered while working on P0. It should be corrected as its
-own small fix, whenever convenient, by aligning either the client call
-sites or the server route names.
+issues encountered while working on P0.
+
+**Resolution:** the two client call sites in `ResearchIntelligenceLayer.tsx`
+were updated to match the existing, already-correct server route names
+(`question-development`, `data-pattern-analysis`) rather than renaming
+the server routes. While correcting the URLs, two related request-body
+field-name mismatches on the same two calls were also found and fixed
+(`context` → `contextNote`; `csvContent` → `rawData`), since a URL-only
+fix would have left both features silently ignoring the user's topic
+context / CSV input rather than actually working. Fixed as a standalone
+commit, not part of the P0 branch history.

@@ -298,9 +298,9 @@ export default function ResearchIntelligenceLayer({
     if (!topicInput.trim()) return;
     setLoadingQuestions(true);
     try {
-      const res = await postWithAiRouting('/api/gemini/research-intelligence/question-dev', {
+      const res = await postWithAiRouting('/api/gemini/research-intelligence/question-development', {
         topic: topicInput,
-        context: contextInput,
+        contextNote: contextInput,
       });
       if (res.ok) {
         const data = await res.json();
@@ -320,9 +320,9 @@ export default function ResearchIntelligenceLayer({
         .map(p => `${p.title} (${p.authors}, ${p.year}): ${p.abstract || p.notes || ''}`)
         .join('\n\n');
 
-      const res = await postWithAiRouting('/api/gemini/research-intelligence/pattern-analysis', {
+      const res = await postWithAiRouting('/api/gemini/research-intelligence/data-pattern-analysis', {
         datasetName: datasetName,
-        csvContent: dataInputType === 'csv' ? csvText : undefined,
+        rawData: dataInputType === 'csv' ? csvText : undefined,
         literatureSummary: dataInputType === 'corpus' ? corpusText : undefined,
       });
       if (res.ok) {
