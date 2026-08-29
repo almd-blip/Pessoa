@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react';
 import { Paper, ResearchJourney, Collection, MoodCheckIn, AccessibilitySettings, DEFAULT_ACCESSIBILITY_SETTINGS } from './types';
 import { INITIAL_PAPERS, INITIAL_JOURNEYS, INITIAL_COLLECTIONS } from './data';
 import { postWithAiRouting } from './lib/localAiService';
+import { runWorkProductMigration } from './lib/workProductMigration';
 
 // Import sub-modules
 import ResearchHome from './components/ResearchHome';
@@ -281,6 +282,23 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('scholar_journeys', JSON.stringify(journeys));
   }, [journeys]);
+
+  // Stage 2 -- WorkProduct migration (docs/DECISIONS.md, approved decisions
+  // D1-D6). Additively derives pessoa_work_products from the current
+  // scholar_papers / scholar_journeys / pub_* legacy keys on every load.
+  // This is deliberately NOT wired into the papers/journeys state above:
+  // those remain the live, actively-edited source of truth (written on
+  // every change via the two effects immediately above), so making the
+  // initial read prefer pessoa_work_products instead would risk the app
+  // reloading stale data after an edit, since nothing here dual-writes to
+  // pessoa_work_products on every keystroke. Bidirectional read/write
+  // wiring was evaluated and intentionally deferred -- see the Stage 2
+  // verification report for the reasoning; this call only keeps
+  // pessoa_work_products current as of each app load for future (Stage 3+)
+  // use, without changing what drives the UI today.
+  useEffect(() => {
+    runWorkProductMigration();
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('scholar_moods', JSON.stringify(moodCheckIns));

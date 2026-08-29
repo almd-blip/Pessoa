@@ -39,6 +39,48 @@ The repository documentation, current code, tests, and recorded decisions are th
 
 AI agents may assess readiness and recommend advancement, but only an authorised human may change `current_stage` in `docs/ROADMAP.md`.
 
+## D-006 — Wellbeing/reflection data excluded from Stage 2 WorkProduct migration
+
+**Status:** Accepted  
+**Date:** 2026-08-25
+
+`scholar_moods`, `wellbeing_small_wins`, `second_thought_insights`, and `daily_focus` are not migrated into `WorkProduct[]` at Stage 2, and no new `reflection` WorkProduct kind is introduced. This is a deliberate deferral of a genuinely ambiguous classification question (see the Stage 2 Design Proposal), not an oversight. These keys remain exactly where they are, untouched.
+
+## D-007 — `projectId` is not populated during Stage 2 migration
+
+**Status:** Accepted  
+**Date:** 2026-08-25
+
+`WorkProduct.projectId` exists as an optional schema field, but Stage 2 migration never invents or heuristically assigns it (no inferring projects from Research Journeys, no auto-assigning Papers to Journeys). Project resolution and any project-centred UI are Stage 3 work.
+
+## D-008 — Migrated WorkProduct timestamps use migration time, not fabricated history
+
+**Status:** Accepted  
+**Date:** 2026-08-25
+
+For legacy records with no historical `createdAt`/`updatedAt`, migration sets both to the migration run's timestamp, explicitly documented as migration time rather than true historical creation time. `createdAt` is preserved unchanged across subsequent migration runs once first set (looked up by id); `updatedAt` legitimately refreshes on each successful re-derivation.
+
+## D-009 — Legacy storage keys are retained during Stage 2
+
+**Status:** Accepted  
+**Date:** 2026-08-25
+
+`scholar_papers`, `scholar_journeys`, and the publishing `pub_*` keys are not deleted during Stage 2. Migration to `pessoa_work_products` is strictly additive. Deletion or reclamation of the legacy keys is deferred until the new representation has been verified in practice, to be revisited after Stage 3.
+
+## D-010 — No new persistence for structured AI results in Stage 2
+
+**Status:** Accepted  
+**Date:** 2026-08-25
+
+`EvidenceMap`, `ResearchQuestionAnalysis`, `PatternAndDataAnalysis`, `CriticalPartnerFeedback`, and `LiteratureSynthesisResult` may be represented by the `WorkProduct` schema in principle, but Stage 2 does not add persistence for them, since none of them are currently persisted anywhere — there is no existing data to migrate, and adding persistence now would be new AI-adjacent product behaviour, not a migration.
+
+## D-011 — Publishing is modelled as a single current workspace
+
+**Status:** Accepted  
+**Date:** 2026-08-25
+
+Stage 2 creates exactly one `kind: "publishing_draft"` WorkProduct, combining the eight `pub_*` legacy keys, representing the one current publishing workspace the application supports today. Multi-document publishing architecture is out of scope for Stage 2.
+
 ## Deferred
 
 Future-stage proposals and unresolved architectural questions should be recorded here or in a dedicated deferred-work document. Recording a proposal does not authorise implementation.
