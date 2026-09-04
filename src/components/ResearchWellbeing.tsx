@@ -58,10 +58,12 @@ export default function ResearchWellbeing({
   mode,
   onExitFocus,
   timerProps,
+  onAddPublishingNote,
 }: {
   mode?: 'focus' | 'wellbeing';
   onExitFocus?: () => void;
   timerProps?: FocusTimerSharedProps;
+  onAddPublishingNote?: (note: Record<string, unknown> & { id: string }) => void;
 } = {}) {
   // Wellbeing Library child destinations: 'home' | 'insights' | 'guides' | 'breathe' | 'wins'
   const [activeChildDestination, setActiveChildDestination] = useState<'home' | 'insights' | 'guides' | 'breathe' | 'wins'>(
@@ -156,7 +158,9 @@ export default function ResearchWellbeing({
     const trimmed = sessionIntent.trim();
     localStorage.setItem('scholar_current_session_intent', trimmed);
 
-    // Save to pub_notes array so it appears in project workspace notes
+    // Add to the shared publishing notes (canonical WorkProduct state) so it
+    // appears in the Publishing Workspace -- see docs/WORK-LOG.md for why
+    // this goes through onAddPublishingNote rather than localStorage directly.
     const newNote = {
       id: `note_intent_${Date.now()}`,
       title: `Session Intent (${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })})`,
@@ -166,14 +170,7 @@ export default function ResearchWellbeing({
       createdAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
     };
 
-    try {
-      const existingNotesRaw = localStorage.getItem('pub_notes');
-      const existingNotes = existingNotesRaw ? JSON.parse(existingNotesRaw) : [];
-      const updatedNotes = [newNote, ...existingNotes];
-      localStorage.setItem('pub_notes', JSON.stringify(updatedNotes));
-    } catch (e) {
-      console.error('Failed to update pub_notes', e);
-    }
+    onAddPublishingNote?.(newNote);
 
     setSavedIntentNotice(`Saved as note in current project ✓`);
     setTimeout(() => {
