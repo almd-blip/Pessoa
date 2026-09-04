@@ -15,7 +15,7 @@ Recording something here is not itself authorisation for further changes.
 
 ## Stage 3 — Live WorkProduct Architecture
 
-**Status as of this entry: implementation in progress, not committed. Working tree is dirty. No commit has been made.**
+**Status as of this entry: implementation complete, validated, and committed. Commit `4c3a62eb4eacd4720f707392714d2d3ed41cee9b` on branch `stage3/live-workproduct-architecture` (parent: `075e6fb93b11184d07583f08b0f36a2adeaaa2ae`).**
 
 Governing documents: `docs/DECISIONS.md` (D-006 through D-011, and the approved Stage 3 Live WorkProduct Architecture Proposal recorded in conversation), `docs/PRODUCT-CONTRACT.md`.
 
