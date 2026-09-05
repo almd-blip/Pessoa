@@ -3,11 +3,29 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Paper, ResearchJourney, Collection, MoodCheckIn, AccessibilitySettings, DEFAULT_ACCESSIBILITY_SETTINGS } from './types';
 import { INITIAL_PAPERS, INITIAL_JOURNEYS, INITIAL_COLLECTIONS } from './data';
 import { postWithAiRouting } from './lib/localAiService';
-import { runWorkProductMigration } from './lib/workProductMigration';
+import { initializeWorkProducts } from './lib/workProductMigration';
+import { WorkProduct } from './types/workProduct';
+import {
+  selectPapers,
+  selectJourneys,
+  selectPublishingDraft,
+  updatePaper as applyPaperUpdate,
+  addPaper as applyPaperAdd,
+  deletePaper as applyPaperDelete,
+  updateJourney as applyJourneyUpdate,
+  addJourney as applyJourneyAdd,
+  deleteJourney as applyJourneyDelete,
+  updatePublishingFields as applyPublishingFieldsUpdate,
+  addPublishingNote as applyAddPublishingNote,
+  resetWorkProductsToSeed,
+  restoreDemoPapersAndJourneys,
+  saveWorkProducts,
+  PublishingNoteInput,
+} from './lib/workProductStore';
 
 // Import sub-modules
 import ResearchHome from './components/ResearchHome';
@@ -104,46 +122,21 @@ export default function App() {
 
   // Load persisted state defensively. Local storage is user-controlled and can be stale
   // or malformed after an app update, so never trust it without validation.
-  const [papers, setPapers] = useState<Paper[]>(() => {
-    try {
-      const cached = localStorage.getItem('scholar_papers');
-      if (cached) {
-        const parsed: unknown = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.every((paper) => paper && typeof paper.id === 'string')) {
-          return parsed as Paper[];
-        }
-      }
-    } catch (error) {
-      console.warn('Failed to parse cached papers:', error);
-    }
-    return INITIAL_PAPERS;
-  });
+  //
+  // Stage 3 -- WorkProduct[] is now canonical live state for Papers, Research
+  // Journeys, and the publishing workspace (docs/DECISIONS.md, approved Stage 3
+  // Live WorkProduct Architecture Proposal). initializeWorkProducts() runs the
+  // legacy-import path exactly once (only if pessoa_work_products doesn't
+  // already exist); on every subsequent load it simply returns the existing
+  // canonical state. papers/journeys/publishingDraft below are derived
+  // selectors, not separate state -- every existing component keeps receiving
+  // the same Paper[]/ResearchJourney[]/PublishingDraftPayload shapes it always
+  // has, unchanged.
+  const [workProducts, setWorkProducts] = useState<WorkProduct[]>(() => initializeWorkProducts());
 
-  const [journeys, setJourneys] = useState<ResearchJourney[]>(() => {
-    try {
-      const cached = localStorage.getItem('scholar_journeys');
-      if (cached) {
-        const parsed: unknown = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.every((journey) => journey && typeof journey.id === 'string')) {
-          return parsed.map((journey) => {
-            const saved = journey as Partial<ResearchJourney>;
-            const initialMatch = INITIAL_JOURNEYS.find((initial) => initial.id === saved.id);
-            return {
-              ...saved,
-              questions: Array.isArray(saved.questions) ? saved.questions : (initialMatch?.questions || []),
-              chapters: Array.isArray(saved.chapters) ? saved.chapters : (initialMatch?.chapters || []),
-              tasks: Array.isArray(saved.tasks) ? saved.tasks : (initialMatch?.tasks || []),
-              timeline: Array.isArray(saved.timeline) ? saved.timeline : (initialMatch?.timeline || []),
-              linkedPaperIds: Array.isArray(saved.linkedPaperIds) ? saved.linkedPaperIds : (initialMatch?.linkedPaperIds || []),
-            } as ResearchJourney;
-          });
-        }
-      }
-    } catch (error) {
-      console.warn('Failed to parse cached journeys:', error);
-    }
-    return INITIAL_JOURNEYS;
-  });
+  const papers = useMemo(() => selectPapers(workProducts), [workProducts]);
+  const journeys = useMemo(() => selectJourneys(workProducts), [workProducts]);
+  const publishingDraft = useMemo(() => selectPublishingDraft(workProducts), [workProducts]);
 
   const [collections] = useState<Collection[]>(INITIAL_COLLECTIONS);
   const [activeJourneyId, setActiveJourneyId] = useState<string>(() => journeys[0]?.id || '');
@@ -274,31 +267,19 @@ export default function App() {
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  // Sync to local storage
+  // Stage 3 -- persist canonical WorkProduct[] state (docs/DECISIONS.md,
+  // approved Stage 3 Live WorkProduct Architecture Proposal). This replaces
+  // the previous separate scholar_papers / scholar_journeys writes and the
+  // Stage 2 per-load migration trigger: WorkProduct[] is now the single
+  // live source of truth, so there is exactly one write path. The legacy
+  // keys are deliberately no longer written here -- see docs/WORK-LOG.md
+  // for the cutover rationale. A failed write is not silently treated as
+  // successful; it is logged (see saveWorkProducts), matching the existing
+  // console.warn-only precedent already used for storage failures
+  // elsewhere in this codebase.
   useEffect(() => {
-    localStorage.setItem('scholar_papers', JSON.stringify(papers));
-  }, [papers]);
-
-  useEffect(() => {
-    localStorage.setItem('scholar_journeys', JSON.stringify(journeys));
-  }, [journeys]);
-
-  // Stage 2 -- WorkProduct migration (docs/DECISIONS.md, approved decisions
-  // D1-D6). Additively derives pessoa_work_products from the current
-  // scholar_papers / scholar_journeys / pub_* legacy keys on every load.
-  // This is deliberately NOT wired into the papers/journeys state above:
-  // those remain the live, actively-edited source of truth (written on
-  // every change via the two effects immediately above), so making the
-  // initial read prefer pessoa_work_products instead would risk the app
-  // reloading stale data after an edit, since nothing here dual-writes to
-  // pessoa_work_products on every keystroke. Bidirectional read/write
-  // wiring was evaluated and intentionally deferred -- see the Stage 2
-  // verification report for the reasoning; this call only keeps
-  // pessoa_work_products current as of each app load for future (Stage 3+)
-  // use, without changing what drives the UI today.
-  useEffect(() => {
-    runWorkProductMigration();
-  }, []);
+    saveWorkProducts(workProducts);
+  }, [workProducts]);
 
   useEffect(() => {
     localStorage.setItem('scholar_moods', JSON.stringify(moodCheckIns));
@@ -334,39 +315,50 @@ export default function App() {
   }, [accessibilitySettings?.dyslexiaFont, fontStyle]);
 
   const handleUpdatePaper = (updated: Paper) => {
-    setPapers((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+    setWorkProducts((prev) => applyPaperUpdate(prev, updated));
   };
 
   const handleAddPaper = (added: Paper) => {
-    setPapers((prev) => [...prev, added]);
+    setWorkProducts((prev) => applyPaperAdd(prev, added));
   };
 
   const handleDeletePaper = (id: string) => {
-    setPapers((prev) => prev.filter((p) => p.id !== id));
+    setWorkProducts((prev) => applyPaperDelete(prev, id));
   };
 
   const handleUpdateJourney = (updated: ResearchJourney) => {
-    setJourneys((prev) => prev.map((j) => (j.id === updated.id ? updated : j)));
+    setWorkProducts((prev) => applyJourneyUpdate(prev, updated));
   };
 
   const handleAddJourney = (added: ResearchJourney) => {
-    setJourneys((prev) => [...prev, added]);
+    setWorkProducts((prev) => applyJourneyAdd(prev, added));
   };
 
   const handleDeleteJourney = (id: string) => {
-    setJourneys((prev) => {
-      const next = prev.filter((j) => j.id !== id);
+    setWorkProducts((prev) => {
+      const next = applyJourneyDelete(prev, id);
       if (activeJourneyId === id) {
-        setActiveJourneyId(next[0]?.id || '');
+        setActiveJourneyId(selectJourneys(next)[0]?.id || '');
       }
       return next;
     });
   };
 
+  // Publishing: the single shared choke point for the two existing note-
+  // adding call sites (CreativePublishingWorkspace's own "add note" button,
+  // and ResearchWellbeing's "save session intent as a note" feature -- see
+  // docs/WORK-LOG.md for why these needed a shared handler).
+  const handleAddPublishingNote = (note: PublishingNoteInput) => {
+    setWorkProducts((prev) => applyAddPublishingNote(prev, note));
+  };
+
+  const handleUpdatePublishingFields = (fields: Parameters<typeof applyPublishingFieldsUpdate>[1]) => {
+    setWorkProducts((prev) => applyPublishingFieldsUpdate(prev, fields));
+  };
+
   const handleResetAllData = () => {
     localStorage.clear();
-    setPapers(INITIAL_PAPERS);
-    setJourneys(INITIAL_JOURNEYS);
+    setWorkProducts(resetWorkProductsToSeed(INITIAL_PAPERS, INITIAL_JOURNEYS));
     setMoodCheckIns([]);
     setActiveJourneyId(INITIAL_JOURNEYS[0]?.id || '');
     setActiveTab('dashboard');
@@ -376,11 +368,10 @@ export default function App() {
   };
 
   const handleRestoreDemoData = () => {
-    setPapers(INITIAL_PAPERS);
-    setJourneys(INITIAL_JOURNEYS);
+    // Preserves the pre-existing asymmetry: this has never reset publishing
+    // state, only papers and journeys (see docs/WORK-LOG.md).
+    setWorkProducts((prev) => restoreDemoPapersAndJourneys(prev, INITIAL_PAPERS, INITIAL_JOURNEYS));
     setActiveJourneyId(INITIAL_JOURNEYS[0]?.id || '');
-    localStorage.setItem('scholar_papers', JSON.stringify(INITIAL_PAPERS));
-    localStorage.setItem('scholar_journeys', JSON.stringify(INITIAL_JOURNEYS));
     setActiveTab('dashboard');
     setResearchSubTab('projects');
   };
@@ -1006,6 +997,9 @@ export default function App() {
                 onUpdatePaper={handleUpdatePaper}
                 onAddPaper={handleAddPaper}
                 onDeletePaper={handleDeletePaper}
+                publishingDraft={publishingDraft}
+                onUpdatePublishingFields={handleUpdatePublishingFields}
+                onAddPublishingNote={handleAddPublishingNote}
                 navKey={navKey}
                 initialActiveTool={
                   researchSubTab === 'plan'
@@ -1032,7 +1026,7 @@ export default function App() {
 
           {/* WELLBEING PANEL */}
           {activeTab === 'wellbeing' && (
-            <ResearchWellbeing mode="wellbeing" />
+            <ResearchWellbeing mode="wellbeing" onAddPublishingNote={handleAddPublishingNote} />
           )}
 
           {/* FOCUS PANEL */}
@@ -1040,6 +1034,7 @@ export default function App() {
             <ResearchWellbeing
               mode="focus"
               onExitFocus={() => setActiveTab('dashboard')}
+              onAddPublishingNote={handleAddPublishingNote}
               timerProps={{
                 preferredFocusMinutes,
                 preferredBreakMinutes,

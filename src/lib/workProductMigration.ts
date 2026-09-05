@@ -7,11 +7,24 @@
  * Stage 2 -- WorkProduct migration.
  *
  * See docs/DECISIONS.md (Stage 2 Design Proposal, approved decisions
- * D1-D6) and docs/PRODUCT-CONTRACT.md for the governing design.
+ * D1-D6, and D-006 through D-011) and docs/PRODUCT-CONTRACT.md for the
+ * governing design.
  *
  * This module wraps existing, unmodified Paper / ResearchJourney /
  * publishing data into the WorkProduct envelope (src/types/workProduct.ts).
  * It does not transform, flatten, or reinterpret that data.
+ *
+ * Stage 3 note: runWorkProductMigration() below (re-derive from legacy
+ * state on every call) was Stage 2's live App.tsx entry point. As of the
+ * Stage 3 live-WorkProduct-state work, App.tsx instead calls
+ * initializeWorkProducts() (bottom of this file) exactly once, at initial
+ * load, and never again -- WorkProduct[] is now canonical live state
+ * (see src/lib/workProductStore.ts for the ongoing mutation functions),
+ * so re-deriving it from legacy keys on every load would overwrite live
+ * in-session edits with stale legacy data. runWorkProductMigration()
+ * itself is unchanged and remains exported (used by its existing tests,
+ * and available for a manual one-off re-import if ever needed), but it is
+ * no longer the live application entry point.
  *
  * Design notes:
  *
@@ -21,8 +34,9 @@
  *   localStorage access at all. This lets them be unit-tested directly in
  *   Node (see workProductMigration.test.ts, run via the Node built-in test
  *   runner through `tsx --test` -- no new test-framework dependency).
- *   Only runWorkProductMigration() and readWorkProducts() touch
- *   localStorage, and they are thin wrappers around the pure functions.
+ *   Only runWorkProductMigration(), initializeWorkProducts(), and
+ *   readWorkProducts() touch localStorage, and they are thin wrappers
+ *   around the pure functions.
  *
  * - Migration is re-derived from current legacy state on every call,
  *   rather than gated by a one-time "already migrated" flag. This
@@ -61,6 +75,11 @@ import {
   NoteCard,
   PublisherChecklistItem,
   ImportedDocument,
+  SAMPLE_DRAFT_CONTENT,
+  DEFAULT_OUTLINE,
+  INITIAL_NOTES,
+  DEFAULT_CHECKLIST,
+  DEFAULT_IMPORTED_DOCS,
 } from '../components/CreativePublishingWorkspace';
 import {
   WorkProduct,
@@ -230,8 +249,8 @@ export interface PublishingRawFields {
   customTargetWords: string | null;
 }
 
-function parseJsonArrayField<T>(raw: string | null, fieldLabel: string): T[] {
-  if (raw === null) return [];
+function parseJsonArrayField<T>(raw: string | null, fieldLabel: string, sampleFallback: T[] = []): T[] {
+  if (raw === null) return sampleFallback;
   try {
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) return parsed as T[];
@@ -247,31 +266,48 @@ function parseJsonArrayField<T>(raw: string | null, fieldLabel: string): T[] {
  * Pure. Always produces a publishing_draft WorkProduct (see module doc
  * comment) -- there is no "whole group failed" case for publishing.
  *
- * Documented judgement call: pub_doc_title, pub_journal_target_id and
- * pub_custom_target_words fall back to the exact same short literal
- * defaults CreativePublishingWorkspace.tsx itself already uses when a key
- * is absent ('Untitled Scholarly Monograph', 'std_article', 3500). The
- * other five fields (pub_draft_content, pub_outline, pub_notes,
- * pub_checklist, pub_imported_docs) do NOT fall back to that component's
- * large seed/sample content (a full sample essay and seed arrays, meant as
- * first-run onboarding content, not real persisted data) -- an absent key
- * there migrates to an empty value instead of duplicating that
- * presentation-layer content into the migration module.
+ * pub_doc_title, pub_journal_target_id and pub_custom_target_words fall
+ * back to the exact same short literal defaults
+ * CreativePublishingWorkspace.tsx itself already uses when a key is absent
+ * ('Untitled Scholarly Monograph', 'std_article', 3500).
+ *
+ * The other five fields (pub_draft_content, pub_outline, pub_notes,
+ * pub_checklist, pub_imported_docs) fall back to a genuinely empty value
+ * UNLESS useSampleContentForAbsentFields is true AND the corresponding raw
+ * legacy key was never persisted at all (raw.X === null) -- in which case
+ * they fall back to CreativePublishingWorkspace.tsx's existing first-run
+ * sample content (the sample essay / seed outline / seed notes / seed
+ * checklist / seed imported doc), imported from that file rather than
+ * duplicated here. This distinction matters: a legacy key that WAS
+ * persisted but is empty or malformed still migrates to a genuinely empty
+ * value either way -- only "never touched at all" gets the samples. This
+ * preserves the Publishing Workspace's pre-Stage-3 first-run behaviour
+ * (docs/WORK-LOG.md, "preserve existing Publishing Workspace sample/
+ * default content" decision) without creating a second, divergent copy of
+ * that sample content: it is stored once, into the canonical
+ * publishing_draft WorkProduct, the first time initializeWorkProducts()
+ * runs with no pre-existing pub_* data.
+ *
+ * The flag defaults to false, so runWorkProductMigration() and all
+ * existing callers/tests of this function are unaffected -- only
+ * initializeWorkProducts()'s one-time legacy-import path passes true.
  */
 export function parseLegacyPublishing(
   raw: PublishingRawFields,
   nowIso: string,
-  existing: WorkProductPublishingDraft | undefined
+  existing: WorkProductPublishingDraft | undefined,
+  useSampleContentForAbsentFields: boolean = false
 ): WorkProductPublishingDraft {
   const parsedTargetWords = raw.customTargetWords !== null ? parseInt(raw.customTargetWords, 10) : NaN;
+  const useSamples = useSampleContentForAbsentFields;
 
   const payload: PublishingDraftPayload = {
     docTitle: raw.docTitle ?? 'Untitled Scholarly Monograph',
-    draftContent: raw.draftContent ?? '',
-    outline: parseJsonArrayField<OutlineItem>(raw.outline, 'outline'),
-    notes: parseJsonArrayField<NoteCard>(raw.notes, 'notes'),
-    checklist: parseJsonArrayField<PublisherChecklistItem>(raw.checklist, 'checklist'),
-    importedDocs: parseJsonArrayField<ImportedDocument>(raw.importedDocs, 'imported_docs'),
+    draftContent: raw.draftContent ?? (useSamples ? SAMPLE_DRAFT_CONTENT : ''),
+    outline: parseJsonArrayField<OutlineItem>(raw.outline, 'outline', useSamples ? DEFAULT_OUTLINE : []),
+    notes: parseJsonArrayField<NoteCard>(raw.notes, 'notes', useSamples ? INITIAL_NOTES : []),
+    checklist: parseJsonArrayField<PublisherChecklistItem>(raw.checklist, 'checklist', useSamples ? DEFAULT_CHECKLIST : []),
+    importedDocs: parseJsonArrayField<ImportedDocument>(raw.importedDocs, 'imported_docs', useSamples ? DEFAULT_IMPORTED_DOCS : []),
     journalTargetId: raw.journalTargetId ?? 'std_article',
     customTargetWords: Number.isFinite(parsedTargetWords) ? parsedTargetWords : 3500,
   };
@@ -344,7 +380,7 @@ export interface MigrationSummary {
  * module doc comment for why this neither creates duplicates nor
  * regresses createdAt.
  */
-export function runWorkProductMigration(): MigrationSummary {
+export function runWorkProductMigration(useSampleContentForAbsentPublishingFields: boolean = false): MigrationSummary {
   const nowIso = new Date().toISOString();
   const current = readCurrentWorkProducts();
 
@@ -373,7 +409,7 @@ export function runWorkProductMigration(): MigrationSummary {
 
   const papers = parseLegacyPapers(papersRaw, nowIso, existingPapersById);
   const journeys = parseLegacyJourneys(journeysRaw, nowIso, existingJourneysById);
-  const publishing = parseLegacyPublishing(publishingRaw, nowIso, existingPublishing);
+  const publishing = parseLegacyPublishing(publishingRaw, nowIso, existingPublishing, useSampleContentForAbsentPublishingFields);
 
   if (!papers.succeeded) {
     console.warn(
@@ -409,4 +445,44 @@ export function runWorkProductMigration(): MigrationSummary {
     papersSkipped: papers.skippedCount,
     journeysSkipped: journeys.skippedCount,
   };
+}
+
+/**
+ * Stage 3 -- one-time initialization / legacy import.
+ *
+ * If pessoa_work_products already exists, it is now canonical live state
+ * (see src/lib/workProductStore.ts) and is simply returned as-is -- it is
+ * NOT re-derived from the legacy scholar_papers / scholar_journeys / pub_*
+ * keys, because doing so on every load would overwrite live in-session
+ * edits with stale legacy data (this is the exact split-source problem
+ * the Stage 2 -> Stage 3 transition exists to resolve).
+ *
+ * If pessoa_work_products does not exist yet (the very first load after
+ * this code ships, or any environment where it was never created), this
+ * runs the same legacy-import logic as runWorkProductMigration() exactly
+ * once, against an empty `current` set, to seed canonical state from
+ * whatever legacy data exists -- passing useSampleContentForAbsentPublishingFields
+ * = true, so that if the pub_* keys were never persisted at all, the
+ * canonical publishing_draft WorkProduct is seeded with
+ * CreativePublishingWorkspace.tsx's existing first-run sample content
+ * (docs/WORK-LOG.md, "preserve existing Publishing Workspace sample/
+ * default content" decision), stored once as real canonical data rather
+ * than left for the component to fabricate locally on every mount.
+ * Subsequent calls are no-ops (they will find pessoa_work_products already
+ * present and simply return it).
+ *
+ * This function never re-derives papers/journeys/publishing from legacy
+ * keys once pessoa_work_products exists -- that is the intended meaning
+ * of "initialisation/legacy import, not an ongoing synchronisation
+ * mechanism" (docs/DECISIONS.md).
+ */
+export function initializeWorkProducts(): WorkProduct[] {
+  const alreadyInitialized = localStorage.getItem(WORK_PRODUCTS_KEY) !== null;
+  if (alreadyInitialized) {
+    return readCurrentWorkProducts();
+  }
+
+  console.log('[WorkProduct init] pessoa_work_products not found; importing from legacy keys once.');
+  const summary = runWorkProductMigration(true);
+  return summary.workProducts;
 }

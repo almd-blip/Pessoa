@@ -35,6 +35,8 @@ import {
 } from 'lucide-react';
 import { Paper } from '../types';
 import { postWithAiRouting } from '../lib/localAiService';
+import { PublishingDraftPayload } from '../types/workProduct';
+import { PublishingNoteInput } from '../lib/workProductStore';
 
 const JOURNAL_PRESETS = [
   { id: 'short_comm', name: 'Short Communication / Letter', targetWords: 2500, label: '2,500w Cap' },
@@ -84,7 +86,28 @@ export interface ImportedDocument {
   notes?: string;
 }
 
-const DEFAULT_OUTLINE: OutlineItem[] = [
+// Stage 3: exported so workProductMigration.ts's one-time legacy-import
+// path can seed the canonical publishing_draft WorkProduct with this
+// existing sample content when no pub_* legacy data ever existed at all
+// (docs/WORK-LOG.md -- "preserve existing Publishing Workspace sample/
+// default content" decision). Content unchanged from before Stage 3.
+export const SAMPLE_DRAFT_CONTENT = `# Epistemic Autonomy and Open Publishing Systems
+
+## Abstract
+This paper examines the role of open-source document formats—such as OpenDocument (.odt), CommonMark, and EPUB—in preserving human authorship and protecting research integrity.
+
+## Introduction
+Academic writing requires an environment where the author retains total sovereignty over their intellectual output. When research relies on proprietary formats or closed engines, authorial agency is compromised.
+
+## Evidence and Discussion
+Recent empirical surveys indicate that researchers using open-source tools like LibreOffice report higher confidence in data preservation.
+
+Furthermore, integrating reflective AI review—which poses probing questions rather than silently overwriting draft prose—helps scholars refine their arguments while keeping the human voice central.
+
+## Conclusion
+Open publishing preparation empowers scholars, open-access journals, and public monograph projects to disseminate knowledge affordably and accessibly.`;
+
+export const DEFAULT_OUTLINE: OutlineItem[] = [
   { id: 'o1', title: '1. Title, Abstract & Key Concepts', level: 1, completed: true, notes: 'Defined scope and key terms.' },
   { id: 'o2', title: '2. Introduction & Background Context', level: 1, completed: true, notes: 'Set context and research questions.' },
   { id: 'o3', title: '3. Evidence, Synthesis & Critical Discussion', level: 1, completed: false, notes: 'Compare literature sources.' },
@@ -92,7 +115,7 @@ const DEFAULT_OUTLINE: OutlineItem[] = [
   { id: 'o5', title: '5. Conclusion & Recommendations', level: 1, completed: false, notes: 'Summarize implications.' },
 ];
 
-const INITIAL_NOTES: NoteCard[] = [
+export const INITIAL_NOTES: NoteCard[] = [
   {
     id: 'n1',
     title: 'Open Source Formats Note',
@@ -109,7 +132,7 @@ const INITIAL_NOTES: NoteCard[] = [
   },
 ];
 
-const DEFAULT_CHECKLIST: PublisherChecklistItem[] = [
+export const DEFAULT_CHECKLIST: PublisherChecklistItem[] = [
   { id: 'c1', label: 'Abstract & Title Alignment', description: 'Title and abstract clearly reflect the core research question.', category: 'formatting', completed: true },
   { id: 'c2', label: 'Structured Headings Hierarchy', description: 'Heading levels follow a logical hierarchy without missing steps.', category: 'formatting', completed: true },
   { id: 'c3', label: 'Inline Citation Verification', description: 'All inline citations correspond to verified library references.', category: 'citations', completed: false },
@@ -117,7 +140,7 @@ const DEFAULT_CHECKLIST: PublisherChecklistItem[] = [
   { id: 'c5', label: 'Perspective & Data Diversity Check', description: 'Reviewed whose voice is included and who may be missing.', category: 'integrity', completed: true },
 ];
 
-const DEFAULT_IMPORTED_DOCS: ImportedDocument[] = [
+export const DEFAULT_IMPORTED_DOCS: ImportedDocument[] = [
   {
     id: 'doc_sample_1',
     title: 'Sample Scholarly Draft',
@@ -136,27 +159,38 @@ interface CreativePublishingWorkspaceProps {
   papers: Paper[];
   onAddPaper?: (paper: Paper) => void;
   onUpdatePaper?: (paper: Paper) => void;
+  publishingDraft: PublishingDraftPayload;
+  onUpdatePublishingFields: (fields: Partial<PublishingDraftPayload>) => void;
+  onAddPublishingNote: (note: PublishingNoteInput) => void;
 }
 
-export default function CreativePublishingWorkspace({ papers, onAddPaper, onUpdatePaper }: CreativePublishingWorkspaceProps) {
+export default function CreativePublishingWorkspace({
+  papers,
+  onAddPaper,
+  onUpdatePaper,
+  publishingDraft,
+  onUpdatePublishingFields,
+  onAddPublishingNote,
+}: CreativePublishingWorkspaceProps) {
   // Main Draft State
-  const [documentTitle, setDocumentTitle] = useState(() => localStorage.getItem('pub_doc_title') || 'Untitled Scholarly Monograph');
-  const [draftContent, setDraftContent] = useState(() => localStorage.getItem('pub_draft_content') || 
-`# Epistemic Autonomy and Open Publishing Systems
-
-## Abstract
-This paper examines the role of open-source document formats—such as OpenDocument (.odt), CommonMark, and EPUB—in preserving human authorship and protecting research integrity.
-
-## Introduction
-Academic writing requires an environment where the author retains total sovereignty over their intellectual output. When research relies on proprietary formats or closed engines, authorial agency is compromised.
-
-## Evidence and Discussion
-Recent empirical surveys indicate that researchers using open-source tools like LibreOffice report higher confidence in data preservation.
-
-Furthermore, integrating reflective AI review—which poses probing questions rather than silently overwriting draft prose—helps scholars refine their arguments while keeping the human voice central.
-
-## Conclusion
-Open publishing preparation empowers scholars, open-access journals, and public monograph projects to disseminate knowledge affordably and accessibly.`);
+  //
+  // Stage 3 -- docTitle/draftContent/outline/checklist/importedDocs are
+  // initialised from the publishingDraft prop (canonical WorkProduct state,
+  // owned by App.tsx), not read from localStorage directly any more. Local
+  // useState is kept for responsive editing, with ONE consolidated effect
+  // below pushing changes back up via onUpdatePublishingFields -- see
+  // docs/WORK-LOG.md for why this replaced the previous six independent
+  // localStorage-backed effects.
+  //
+  // notes is NOT given local state at all: it is read directly from
+  // publishingDraft.notes and mutated only via onAddPublishingNote, because
+  // this field has a second, independent writer (ResearchWellbeing.tsx's
+  // "save session intent as a note" feature) discovered during the Stage 3
+  // mutation-path inventory -- a local mirror here would risk silently
+  // clobbering a note added from that other component. See
+  // docs/WORK-LOG.md for the full rationale.
+  const [documentTitle, setDocumentTitle] = useState(() => publishingDraft.docTitle);
+  const [draftContent, setDraftContent] = useState(() => publishingDraft.draftContent);
 
   const [activeTab, setActiveTab] = useState<'write' | 'documents' | 'outline' | 'export'>('write');
 
@@ -165,10 +199,7 @@ Open publishing preparation empowers scholars, open-access journals, and public 
   const [isAnalyticsMenuOpen, setIsAnalyticsMenuOpen] = useState<boolean>(false);
 
   // Imported Documents
-  const [importedDocs, setImportedDocs] = useState<ImportedDocument[]>(() => {
-    const cached = localStorage.getItem('pub_imported_docs');
-    return cached ? JSON.parse(cached) : DEFAULT_IMPORTED_DOCS;
-  });
+  const [importedDocs, setImportedDocs] = useState<ImportedDocument[]>(() => publishingDraft.importedDocs);
   const [selectedDocId, setSelectedDocId] = useState<string | null>(() => (importedDocs.length > 0 ? importedDocs[0].id : null));
   const [docSearchQuery, setDocSearchQuery] = useState('');
   const [docTypeFilter, setDocTypeFilter] = useState<string>('all');
@@ -176,24 +207,22 @@ Open publishing preparation empowers scholars, open-access journals, and public 
   const [isDragOver, setIsDragOver] = useState(false);
 
   // Outline & Notes State
-  const [outline, setOutline] = useState<OutlineItem[]>(() => {
-    const cached = localStorage.getItem('pub_outline');
-    return cached ? JSON.parse(cached) : DEFAULT_OUTLINE;
-  });
-  const [notes, setNotes] = useState<NoteCard[]>(() => {
-    const cached = localStorage.getItem('pub_notes');
-    return cached ? JSON.parse(cached) : INITIAL_NOTES;
-  });
+  const [outline, setOutline] = useState<OutlineItem[]>(() => publishingDraft.outline);
   const [newNoteTitle, setNewNoteTitle] = useState('');
   const [newNoteContent, setNewNoteContent] = useState('');
 
   // Checklist
-  const [checklist, setChecklist] = useState<PublisherChecklistItem[]>(() => {
-    const cached = localStorage.getItem('pub_checklist');
-    return cached ? JSON.parse(cached) : DEFAULT_CHECKLIST;
-  });
+  const [checklist, setChecklist] = useState<PublisherChecklistItem[]>(() => publishingDraft.checklist);
 
   // Target Goal State
+  //
+  // Deliberately NOT wired into publishingDraft / onUpdatePublishingFields.
+  // These two fields were already only ever read from localStorage once at
+  // mount, with no persistence effect of their own (selectedJournalTargetId
+  // is live-mutable via the dropdown below but was never actually
+  // persisted; customTargetWords's setter was never even called anywhere) --
+  // a pre-existing gap, not something this change fixes or worsens. See
+  // docs/WORK-LOG.md.
   const [selectedJournalTargetId, setSelectedJournalTargetId] = useState<string>(() => localStorage.getItem('pub_journal_target_id') || 'std_article');
   const [customTargetWords, setCustomTargetWords] = useState<number>(() => {
     const cached = localStorage.getItem('pub_custom_target_words');
@@ -206,13 +235,20 @@ Open publishing preparation empowers scholars, open-access journals, and public 
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Persistence
-  useEffect(() => { localStorage.setItem('pub_doc_title', documentTitle); }, [documentTitle]);
-  useEffect(() => { localStorage.setItem('pub_draft_content', draftContent); }, [draftContent]);
-  useEffect(() => { localStorage.setItem('pub_outline', JSON.stringify(outline)); }, [outline]);
-  useEffect(() => { localStorage.setItem('pub_notes', JSON.stringify(notes)); }, [notes]);
-  useEffect(() => { localStorage.setItem('pub_checklist', JSON.stringify(checklist)); }, [checklist]);
-  useEffect(() => { localStorage.setItem('pub_imported_docs', JSON.stringify(importedDocs)); }, [importedDocs]);
+  // Persistence -- Stage 3: one consolidated push to canonical WorkProduct
+  // state (docs/WORK-LOG.md), replacing the previous six independent
+  // localStorage-backed effects. notes is deliberately not included here --
+  // see the constructor-area comment above for why it is mutated only via
+  // onAddPublishingNote, never through this effect.
+  useEffect(() => {
+    onUpdatePublishingFields({
+      docTitle: documentTitle,
+      draftContent,
+      outline,
+      checklist,
+      importedDocs,
+    });
+  }, [documentTitle, draftContent, outline, checklist, importedDocs, onUpdatePublishingFields]);
 
   // Readability Statistics
   const computeStats = () => {
@@ -372,7 +408,7 @@ Open publishing preparation empowers scholars, open-access journals, and public 
       tags: ['note'],
       updatedAt: new Date().toLocaleDateString(),
     };
-    setNotes((prev) => [added, ...prev]);
+    onAddPublishingNote(added);
     setNewNoteTitle('');
     setNewNoteContent('');
   };
@@ -472,7 +508,7 @@ Open publishing preparation empowers scholars, open-access journals, and public 
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
-            <span>Outline & Notes ({outline.length + notes.length})</span>
+            <span>Outline & Notes ({outline.length + publishingDraft.notes.length})</span>
           </button>
 
           <button
@@ -707,7 +743,7 @@ Open publishing preparation empowers scholars, open-access journals, and public 
           {/* Research Notes */}
           <div className="space-y-4 pt-4 border-t border-stone-200/80 dark:border-stone-800/80">
             <h4 className="font-serif font-bold text-xs uppercase text-stone-900 dark:text-stone-100 font-mono tracking-wider">
-              Research & Idea Notes ({notes.length})
+              Research & Idea Notes ({publishingDraft.notes.length})
             </h4>
 
             <form onSubmit={handleAddNote} className="space-y-2 max-w-lg">
@@ -734,7 +770,7 @@ Open publishing preparation empowers scholars, open-access journals, and public 
             </form>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-              {notes.map((note) => (
+              {publishingDraft.notes.map((note: any) => (
                 <div key={note.id} className="py-2.5 border-b border-stone-200/80 dark:border-stone-800/80 space-y-1 text-xs">
                   <div className="flex items-center justify-between">
                     <strong className="text-stone-900 dark:text-stone-100 font-semibold">{note.title}</strong>
