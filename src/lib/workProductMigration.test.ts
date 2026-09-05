@@ -26,12 +26,20 @@ import {
   parseLegacyPublishing,
   mergeWorkProducts,
   runWorkProductMigration,
+  initializeWorkProducts,
   readWorkProducts,
   WORK_PRODUCTS_KEY,
   PUBLISHING_DRAFT_ID,
   PublishingRawFields,
 } from './workProductMigration';
 import { WorkProductPaper, WorkProductResearchJourney } from '../types/workProduct';
+import {
+  SAMPLE_DRAFT_CONTENT,
+  DEFAULT_OUTLINE,
+  INITIAL_NOTES,
+  DEFAULT_CHECKLIST,
+  DEFAULT_IMPORTED_DOCS,
+} from '../components/CreativePublishingWorkspace';
 
 // ----------------- test-only localStorage stand-in -----------------
 
@@ -349,6 +357,52 @@ describe('parseLegacyPublishing', () => {
     assert.equal(result.createdAt, '2018-01-01T00:00:00.000Z');
     assert.equal(result.updatedAt, '2026-06-01T00:00:00.000Z');
   });
+
+  // ----- useSampleContentForAbsentFields (docs/WORK-LOG.md: "preserve
+  // existing Publishing Workspace sample/default content" decision) -----
+
+  test('useSampleContentForAbsentFields=false (the default) still produces genuinely empty values for entirely absent fields -- unchanged from before this decision', () => {
+    const result = parseLegacyPublishing(emptyPublishingRaw, '2026-01-01T00:00:00.000Z', undefined);
+    assert.equal(result.payload.draftContent, '');
+    assert.deepEqual(result.payload.outline, []);
+    assert.deepEqual(result.payload.notes, []);
+    assert.deepEqual(result.payload.checklist, []);
+    assert.deepEqual(result.payload.importedDocs, []);
+  });
+
+  test('useSampleContentForAbsentFields=true with every field absent restores the exact existing first-run sample content', () => {
+    const result = parseLegacyPublishing(emptyPublishingRaw, '2026-01-01T00:00:00.000Z', undefined, true);
+    assert.equal(result.payload.draftContent, SAMPLE_DRAFT_CONTENT);
+    assert.deepEqual(result.payload.outline, DEFAULT_OUTLINE);
+    assert.deepEqual(result.payload.notes, INITIAL_NOTES);
+    assert.deepEqual(result.payload.checklist, DEFAULT_CHECKLIST);
+    assert.deepEqual(result.payload.importedDocs, DEFAULT_IMPORTED_DOCS);
+  });
+
+  test('useSampleContentForAbsentFields=true does NOT override a field that was genuinely persisted (even as an empty value)', () => {
+    const raw: PublishingRawFields = {
+      ...emptyPublishingRaw,
+      draftContent: '', // explicitly persisted as an empty string, not absent
+      outline: '[]', // explicitly persisted as an empty array, not absent
+    };
+    const result = parseLegacyPublishing(raw, '2026-01-01T00:00:00.000Z', undefined, true);
+    assert.equal(result.payload.draftContent, '');
+    assert.deepEqual(result.payload.outline, []);
+  });
+
+  test('useSampleContentForAbsentFields=true does NOT use the sample for a malformed (not absent) field', () => {
+    const raw: PublishingRawFields = { ...emptyPublishingRaw, outline: '{not valid json[[[' };
+    const result = parseLegacyPublishing(raw, '2026-01-01T00:00:00.000Z', undefined, true);
+    // Malformed is not the same as "never persisted" -- must not silently
+    // become the sample content either.
+    assert.deepEqual(result.payload.outline, []);
+  });
+
+  test('useSampleContentForAbsentFields=true still respects a genuinely persisted, non-empty value', () => {
+    const raw: PublishingRawFields = { ...emptyPublishingRaw, draftContent: 'A real user draft' };
+    const result = parseLegacyPublishing(raw, '2026-01-01T00:00:00.000Z', undefined, true);
+    assert.equal(result.payload.draftContent, 'A real user draft');
+  });
 });
 
 // ----------------- mergeWorkProducts -----------------
@@ -481,5 +535,56 @@ describe('runWorkProductMigration', () => {
     runWorkProductMigration();
     assert.equal(WORK_PRODUCTS_KEY, 'pessoa_work_products');
     assert.notEqual(localStorage.getItem(WORK_PRODUCTS_KEY), null);
+  });
+
+  test('runWorkProductMigration(true) uses sample content for absent publishing fields; the default (no argument) does not', () => {
+    const withSamples = runWorkProductMigration(true);
+    const publishingWithSamples = withSamples.workProducts.find((wp) => wp.kind === 'publishing_draft');
+    assert.equal((publishingWithSamples?.payload as any).draftContent, SAMPLE_DRAFT_CONTENT);
+
+    localStorage.clear();
+    const withoutSamples = runWorkProductMigration();
+    const publishingWithoutSamples = withoutSamples.workProducts.find((wp) => wp.kind === 'publishing_draft');
+    assert.equal((publishingWithoutSamples?.payload as any).draftContent, '');
+  });
+});
+
+// ----------------- initializeWorkProducts (Stage 3 live entry point) -----------------
+
+describe('initializeWorkProducts', () => {
+  test('on a genuinely fresh environment (no pessoa_work_products, no legacy keys at all), restores the existing Publishing Workspace sample content', () => {
+    const result = initializeWorkProducts();
+    const publishing = result.find((wp) => wp.kind === 'publishing_draft');
+    assert.equal((publishing?.payload as any).draftContent, SAMPLE_DRAFT_CONTENT);
+    assert.deepEqual((publishing?.payload as any).outline, DEFAULT_OUTLINE);
+    assert.deepEqual((publishing?.payload as any).notes, INITIAL_NOTES);
+    assert.deepEqual((publishing?.payload as any).checklist, DEFAULT_CHECKLIST);
+    assert.deepEqual((publishing?.payload as any).importedDocs, DEFAULT_IMPORTED_DOCS);
+  });
+
+  test('once pessoa_work_products exists, subsequent calls do not re-derive from legacy state (no ongoing synchronisation)', () => {
+    const first = initializeWorkProducts();
+    // Simulate a live edit having happened after initialization -- direct
+    // localStorage manipulation stands in for what saveWorkProducts would
+    // do after a canonical-state mutation.
+    const edited = first.map((wp) =>
+      wp.kind === 'publishing_draft' ? { ...wp, payload: { ...wp.payload, draftContent: 'User has since edited this' } } : wp
+    );
+    localStorage.setItem(WORK_PRODUCTS_KEY, JSON.stringify(edited));
+
+    // Even if legacy pub_draft_content now (hypothetically) held something
+    // else, a second initializeWorkProducts() call must not overwrite the
+    // live edit -- it should simply return existing canonical state.
+    localStorage.setItem('pub_draft_content', 'Stale legacy value that must NOT reappear');
+    const second = initializeWorkProducts();
+    const publishing = second.find((wp) => wp.kind === 'publishing_draft');
+    assert.equal((publishing?.payload as any).draftContent, 'User has since edited this');
+  });
+
+  test('a legacy field that was genuinely persisted (even if later emptied) is never overwritten by the sample content', () => {
+    localStorage.setItem('pub_draft_content', 'A real, if short, draft');
+    const result = initializeWorkProducts();
+    const publishing = result.find((wp) => wp.kind === 'publishing_draft');
+    assert.equal((publishing?.payload as any).draftContent, 'A real, if short, draft');
   });
 });

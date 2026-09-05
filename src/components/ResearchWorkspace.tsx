@@ -51,6 +51,8 @@ import KnowledgeGraph from './KnowledgeGraph';
 import ResearchIntelligenceLayer from './ResearchIntelligenceLayer';
 import WritingCompanion from './WritingCompanion';
 import CreativePublishingWorkspace from './CreativePublishingWorkspace';
+import { PublishingDraftPayload } from '../types/workProduct';
+import { PublishingNoteInput } from '../lib/workProductStore';
 import FundingWorkspace from './FundingWorkspace';
 import DataIngestionModule from './DataIngestionModule';
 import CitationEngine from './CitationEngine';
@@ -70,6 +72,9 @@ interface ResearchWorkspaceProps {
   onUpdatePaper?: (updated: Paper) => void;
   onAddPaper?: (added: Paper) => void;
   onDeletePaper?: (id: string) => void;
+  publishingDraft: PublishingDraftPayload;
+  onUpdatePublishingFields?: (fields: Partial<PublishingDraftPayload>) => void;
+  onAddPublishingNote?: (note: PublishingNoteInput) => void;
   initialActiveTool?: string;
   navKey?: number;
 }
@@ -102,6 +107,9 @@ export default function ResearchWorkspace({
   onUpdatePaper = () => {},
   onAddPaper = () => {},
   onDeletePaper = () => {},
+  publishingDraft,
+  onUpdatePublishingFields = () => {},
+  onAddPublishingNote = () => {},
   initialActiveTool,
   navKey,
 }: ResearchWorkspaceProps) {
@@ -1477,6 +1485,9 @@ export default function ResearchWorkspace({
               papers={papers}
               onAddPaper={onAddPaper}
               onUpdatePaper={onUpdatePaper}
+              publishingDraft={publishingDraft}
+              onUpdatePublishingFields={onUpdatePublishingFields}
+              onAddPublishingNote={onAddPublishingNote}
             />
           </div>
         );
