@@ -81,9 +81,38 @@ For legacy records with no historical `createdAt`/`updatedAt`, migration sets bo
 
 Stage 2 creates exactly one `kind: "publishing_draft"` WorkProduct, combining the eight `pub_*` legacy keys, representing the one current publishing workspace the application supports today. Multi-document publishing architecture is out of scope for Stage 2.
 
+## D-012 — The canonical WorkProduct[] work is a Stage 2 continuation, not Stage 3 completion
+
+**Status:** Accepted  
+**Date:** 2026-08-29
+
+The `WorkProduct[]` canonical live-state and mutation-synchronisation work — implemented and merged under the branch/PR name "Stage 3" (`stage3/live-workproduct-architecture`, PR #2, "Stage 3: make WorkProduct[] the canonical live state") — is hereby recorded as a **Stage 2 continuation/prerequisite**, not as satisfying the roadmap's Stage 3 definition.
+
+The roadmap's Stage 3 definition (*"Contextual project-centred UI + `App.tsx` decomposition"*) remains unchanged and unimplemented. Nothing in the merged work introduced project-centred UI, a project entity, or any `App.tsx` decomposition — verified directly: `App.tsx` remains a single file, and `projectId` exists only as an unpopulated optional schema field with zero other references in the codebase.
+
+The historical branch name and PR title are preserved unchanged, per the principle that this correction is to the *interpretation* of that work going forward, not a rewrite of the record of what happened. Future references to "Stage 3" should be understood against the roadmap's own definition, not against the branch/PR naming from this period.
+
+## D-013 — `saveWorkProducts()` / `initializeWorkProducts()` is the intended Stage 4 storage boundary
+
+**Status:** Accepted  
+**Date:** 2026-08-29
+
+The persistence adapter formed by `saveWorkProducts()` (write) and `initializeWorkProducts()` (one-time init/legacy-import) in `src/lib/workProductStore.ts` / `src/lib/workProductMigration.ts` is formally recorded as the intended seam at which a future `localStorage -> IndexedDB` migration (Stage 4) would be introduced. Both functions already isolate all `pessoa_work_products` storage access behind this boundary; no other code touches that key directly.
+
+This is a boundary decision only. It does not authorise Stage 4 implementation, does not redesign the seam, and does not resolve open questions about Stage 4's actual scope (e.g. whether other `localStorage` keys are included) or about the persistence-failure-handling gap recorded below.
+
 ## Deferred
 
 Future-stage proposals and unresolved architectural questions should be recorded here or in a dedicated deferred-work document. Recording a proposal does not authorise implementation.
+
+### Open decision — `saveWorkProducts()` persistence-failure UX
+
+**Status:** Open — not resolved  
+**Date recorded:** 2026-08-29
+
+`saveWorkProducts()` returns a `SaveResult` (`{ok, error}`) on write failure, but its only call site (`App.tsx`) discards this value; failure is currently logged to the console only, with no user-visible indication and no retry, dirty-state tracking, or rollback. This is a real, non-hypothetical gap: in-memory state can diverge from persisted state after a failed write, and a reload can silently lose the most recent unpersisted change.
+
+This is explicitly left unresolved. No retry, dirty-state tracking, rollback, or warning UI has been implemented as part of this reconciliation. Resolving it is a product/UX decision, and is deferred until separately authorised — see also D-013, since any Stage 4 (IndexedDB) work would need this decided first, given IndexedDB's more varied failure modes.
 
 ### Known pre-existing issue — Research Intelligence route mismatch
 
